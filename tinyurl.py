@@ -7,7 +7,7 @@ def shorten(long_url, alias,count=0):
 	soup = BeautifulSoup(response, 'html.parser')
 	check_error = soup.p.b.string
 	if "The custom alias" in check_error:
-		return None
+		return 1
 	else:
 		return (soup.find_all('div', {'class': 'indent'})[1].b.string)
 
