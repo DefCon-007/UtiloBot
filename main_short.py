@@ -5,7 +5,7 @@ import selenium.common.exceptions
 import time
 from selenium.webdriver.common.proxy import *
 def main(file_path):
-    driver = webdriver.Chrome()
+    driver = webdriver.PhantomJS()
     driver.get('http://expirebox.com/')
     file_upload = driver.find_element_by_id('fileupload')  #finding the file upload element
     #print ("Uploading file please wait")
