@@ -10,13 +10,16 @@ from threading import Thread
 with open('./ACCESS_TOKEN', 'r') as f:
     token = f.readline().rstrip('\n')
 
-def link_sender(bot , update ,file_local_path ):
+def link_sender(bot , update ):
 	print ("Starting Thread")
 	file_url = bot.getFile(update.message.document.file_id)['file_path']  #getting file download url 
 	urllib.request.urlretrieve(file_url , "./{}".format(update.message.document.file_name))    # downloading file
 	file_local_path = os.path.abspath("./{}".format(update.message.document.file_name))  #getting absolute path of the file 
 	links = main_short.main(file_local_path)   #uploading and shorting the file
-	bot.sendMessage(chat_id=update.message.chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(update.message.document.file_name,links['down'],links['del']))
+	if links == None :
+		bot.sendMessage(chat_id=update.message.chat_id, text="There were some internal problems please send me the file again")
+	else :
+		bot.sendMessage(chat_id=update.message.chat_id, disable_web_page_preview = True , text="For the file {} \nDownload link : {}\nDeletion link : {}".format(update.message.document.file_name,links['down'],links['del']))
 	os.remove(file_local_path)
 def start(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I'm a bot, please talk to me!")
