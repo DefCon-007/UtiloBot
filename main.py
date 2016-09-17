@@ -15,10 +15,9 @@ def get_file () :
 def tpp (bot,update) :
 	bot.sendMessage(chat_id=update.message.chat_id, text="I am also so bored!!! SO what are you upto ???? ")
 def documents(bot, update):
-	#Downloading file 
-	file_url = bot.getFile(update.message.document.file_id)['file_path']
-	urllib.request.urlretrieve(file_url , "./files/{}".format(update.message.document.file_name))
-	file_local_path = os.path.abspath("./files/{}".format(update.message.document.file_name))
+	file_url = bot.getFile(update.message.document.file_id)['file_path']  #getting file download url 
+	urllib.request.urlretrieve(file_url , "./{}".format(update.message.document.file_name))    # downloading file
+	file_local_path = os.path.abspath("./{}".format(update.message.document.file_name))  #getting absolute path of the file 
 	bot.sendMessage(chat_id=update.message.chat_id, text="I got the file\nLet me just upload it to my server first.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from expire.com server")
 	links = main_short.main(file_local_path)   #uploading and shorting the file
 	bot.sendMessage(chat_id=update.message.chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(update.message.document.file_name,links['down'],links['del']))
