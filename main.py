@@ -1,22 +1,23 @@
 import telegram
-from telegram.ext import Updater
-from telegram.ext import CommandHandler,CallbackQueryHandler
+from telegram.ext import CommandHandler,CallbackQueryHandler,Updater,MessageHandler, Filters
 import logging
-from telegram.ext import MessageHandler, Filters
 import urllib.request
 import main_short
 import os 
 from threading import Thread
-import dill
 from selenium import webdriver
 import selenium.common.exceptions
-from pyshorteners import Shortener
+#from pyshorteners import Shortener
+import bitly_api
 with open('./ACCESS_TOKEN', 'r') as f:
 	token = f.readline().rstrip('\n')
-with open('./GOOGLE_KEY', 'r') as f:
-	google_api = f.readline().rstrip('\n')
+# with open('./GOOGLE_KEY', 'r') as f:
+# 	google_api = f.readline().rstrip('\n')
+with open('./BITLY_ACCESS_TOKEN', 'r') as f:
+	bitly_token = f.readline().rstrip('\n')
 def youtube_download_via_url(url,):
-	driver = webdriver.Chrome()
+	driver = webdriver.PhantomJS()
+	bitly = bitly_api.Connection(access_token=bitly_token)
 	url = url.replace("youtube" , "youtube1s")  #changing supplied youtube url to redirect it to youtubemultidownload
 	driver.get(url)
 
@@ -33,14 +34,21 @@ def youtube_download_via_url(url,):
 	#print ("For {}".format(quality_list[0].text))
 	resoulution = quality_list[1].find_elements_by_tag_name('a')
 	for res in resoulution :
-		videos.append({"ext":"Mp4 : " , "quality" : res.text , "url" : res.get_attribute('href')})
+		if res.get_attribute('class') == "btn btn-success" :
+			continue
+		# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
+		# print (shorten_url)
+		videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
 		#print (res.get_attribute('href'))
 	#getting all the 3gp's
 	#print ("For {}".format(quality_list[-2].text))
 	resoulution = quality_list[-1].find_elements_by_tag_name('a')
-	shortener = Shortener('Google', api_key=google_api)  #initialising link shortener
+	#shortener = Shortener('Google', api_key=google_api)  #initialising link shortener
+	#shortener = Shortener('Tinyurl')
 	for res in resoulution :
-		videos.append({"ext":"3gp : " , "quality" : res.text , "url" : res.get_attribute('href') , 'short_url' : shortener.short(res.get_attribute('href')) })
+		# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
+		# print (shorten_url)
+		videos.append({"ext":"3gp : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
 	return videos 
 
 def send_video(chat_id , file_name,bot):
@@ -79,7 +87,7 @@ def inline_query(bot ,update) :
 		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Send the video url (e.g. : https://www.youtube.com/watch?v=abcxyz)")
 		Flag = "2_dwn"
 		#download_video_via_url()
-	elif update.callback_query['data'].startswith('vid_url'):
+	elif update.callback_query['data'].startswith('vid_url'):  #sending the short url of the specified quality
 		video_url = update.callback_query['data'][7:]
 		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text=video_url)
 def echo(bot, update):
@@ -87,13 +95,12 @@ def echo(bot, update):
 	#if update.message.text == "Download video via url" :
 	if Flag == "2_dwn" :
 		print ("Got the video link")
+		bot.sendMessage(chat_id=update.message.chat_id,text="Awesome !! I got the video link.. Just wait few seconds !!")
 		video_list = youtube_download_via_url(update.message.text)   # ********* Add here check for wrong link ***************
 		#sending available quality
 		button_list = []
-		Iniline_key = [{'text': "Search YouTube" , 'callback_data' : '1_ser'} , {'text': "Download video via URL" , 'callback_data' : '2_dwn'}]
-		button_list = [Iniline_key,Iniline_key]
 		for video in video_list :
-			button_list.append([{'text':video['ext'] + video["quality"] , 'callback_data': "vid_url{}".format(video["short_url"])}])
+			button_list.append([{'text':video['ext'] + video["quality"] , 'callback_data': "vid_url" + video["short_url"]}])
 		quality_keyboard={'inline_keyboard':button_list}
 		bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality")
 		Flag = None
