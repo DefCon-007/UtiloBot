@@ -15,6 +15,17 @@ with open('./ACCESS_TOKEN', 'r') as f:
 # 	google_api = f.readline().rstrip('\n')
 with open('./BITLY_ACCESS_TOKEN', 'r') as f:
 	bitly_token = f.readline().rstrip('\n')
+def handelling_download_via_url(bot,update):
+	bot.sendMessage(chat_id=update.message.chat_id,text="Awesome !! I got the video link.. Just wait few seconds !!")
+	video_list = youtube_download_via_url(update.message.text)   # ********* Add here check for wrong link ***************
+	print ("I got the video links as follows : ")
+	print video_list
+	#sending available quality
+	button_list = []
+	for video in video_list :
+		button_list.append([{'text':video['ext'] + video["quality"] , 'callback_data': "vid_url" + video["short_url"]}])
+	quality_keyboard={'inline_keyboard':button_list}
+	bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality")
 def youtube_download_via_url(url,):
 	driver = webdriver.PhantomJS()
 	bitly = bitly_api.Connection(access_token=bitly_token)
@@ -27,6 +38,7 @@ def youtube_download_via_url(url,):
 			break
 		except selenium.common.exceptions.NoSuchElementException:
 			pass
+	print ("Getting detalis for {}".format(name))
 	quality_list = driver.find_element_by_xpath("//*[@id='Download_Quality']/ul").find_elements_by_tag_name('li')
 #	print (len(quality_list))
 	videos = []
@@ -95,15 +107,9 @@ def echo(bot, update):
 	#if update.message.text == "Download video via url" :
 	if Flag == "2_dwn" :
 		print ("Got the video link")
-		bot.sendMessage(chat_id=update.message.chat_id,text="Awesome !! I got the video link.. Just wait few seconds !!")
-		video_list = youtube_download_via_url(update.message.text)   # ********* Add here check for wrong link ***************
-		#sending available quality
-		button_list = []
-		for video in video_list :
-			button_list.append([{'text':video['ext'] + video["quality"] , 'callback_data': "vid_url" + video["short_url"]}])
-		quality_keyboard={'inline_keyboard':button_list}
-		bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality")
 		Flag = None
+		Thread(target = handelling_download_via_url , args = (bot , update ,)).start()
+		
 	else :
 		bot.sendMessage(chat_id=update.message.chat_id, text=update.message.text)
 Flag = None
