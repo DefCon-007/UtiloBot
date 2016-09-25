@@ -7,13 +7,13 @@ def main(file_path):
 	driver = webdriver.PhantomJS()
 	driver.get('http://expirebox.com/')
 	file_upload = driver.find_element_by_id('fileupload')  #finding the file upload element
-	print ("Uploading file please wait")
+	sys.stdout.write ("Uploading file please wait")
 	file_upload.send_keys(file_path)  #uploading file
 	while True :
 		try :
 			del_button = driver.find_element_by_xpath("//button[@class='btn btn-danger btndel']")
 			del_button.click()
-			print ("Upload Complete")
+			sys.stdout.write ("Upload Complete")
 			break
 		except selenium.common.exceptions.ElementNotVisibleException :
 			time.sleep(1)
@@ -39,7 +39,7 @@ def main(file_path):
 		file_name = original_file_name + str(count)
 		count = count + 1 
 	driver.quit()
-	print (links)
+	sys.stdout.write (links)
 	driver.quit()
 	return links 
 if __name__ == "__main__":
