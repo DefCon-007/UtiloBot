@@ -3,7 +3,6 @@ import sys
 from selenium import webdriver
 import selenium.common.exceptions
 import time
-from selenium.webdriver.common.proxy import *
 def main(file_path):
 	driver = webdriver.PhantomJS()
 	driver.get('http://expirebox.com/')
@@ -41,6 +40,7 @@ def main(file_path):
 		count = count + 1 
 	driver.quit()
 	print (links)
+	driver.quit()
 	return links 
 if __name__ == "__main__":
 	main(sys.argv[1])
