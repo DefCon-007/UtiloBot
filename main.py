@@ -24,6 +24,7 @@ def youtube_search (name,page) :
 	results = []
 	while a<int(page):
 		url="https://www.youtube.com/results?search_query="+name+"&page=" + str(a+1)
+		print (url)
 		try :
 			source_code=requests.get(url)  #getting page source
 		except requests.exceptions.ProxyError:
@@ -49,6 +50,7 @@ def youtube_search (name,page) :
 						flag =1
 						continue
 					video['name'] = name_link.string  #getting name
+					print (video['name'])
 					video['video_link'] = "https://www.youtube.com"+name_link.get('href')
 				if flag == 1 :
 					continue
@@ -155,46 +157,62 @@ def handelling_download_via_url(bot,update,url,flag=0,chat_id=0):
 		bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality")
 	else :
 		bot.sendMessage(chat_id=chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality for {}".format(main_json['name']))
-def youtube_download_via_url(url):
+def youtube_download_via_url(base_url):
 	print ("Starting web driver")
-	driver = webdriver.PhantomJS()
+	driver = webdriver.PhantomJS(service_args=['--load-images=false'])
 	print ("Webdriver started")
 	bitly = bitly_api.Connection(access_token=bitly_token)
-	url = url.replace("youtube" , "youtube1s")  #changing supplied youtube url to redirect it to youtubemultidownload
-	print (url)
-	driver.get(url)
+	base_url = base_url.replace("youtube" , "getlinkyoutube")  #changing supplied youtube url to redirect it to youtubemultidownload
+	base_url = base_url.replace("https" , "http")
+	print (base_url)
+	driver.get(base_url)
 	print (driver.current_url)
 	while True :
-		try: 
-			name = driver.find_element_by_xpath("//div[@id='Download_Image']").find_element_by_tag_name('h5').text  #gettting the name of the video
+		try:
+			name = driver.find_element_by_xpath("//h1[@class='title-video']").text
 			break
 		except selenium.common.exceptions.NoSuchElementException:
-			print (driver.current_url)
-			driver.get(url)
-			pass
+			print ("wait")
 	print ("Getting detalis for {}".format(name))
-	quality_list = driver.find_element_by_xpath("//*[@id='Download_Quality']/ul").find_elements_by_tag_name('li')
-#	print (len(quality_list))
+	# quality_list = driver.find_element_by_xpath("//*[@id='Download_Quality']/ul").find_elements_by_tag_name('li')
 	videos = []
+	for qua_div in driver.find_elements_by_xpath("//div[@class='col-md-4 downbuttonbox']"):
+		anchor = qua_div.find_element_by_tag_name('a')
+		url = anchor.get_attribute('href')  #getting video url
+		url = url.replace("%20-%20[www.getlinkyoutube.com]","")  #removing getlinkyoutube from file name
+		span =qua_div.find_element_by_tag_name('span') 
+		quality = span.text  # getting video url
+		if "Mp4" in quality :
+			videos.append({"ext":"Mp4 : " , "quality" : quality[4:] , "short_url" : bitly.shorten(url)['url'] })
+		if "3gp" in quality :
+			videos.append({"ext":"3gp : " , "quality" : quality[4:] , "short_url" : bitly.shorten(url)['url'] })
+		if "m4a" in quality :
+			videos.append({"ext":"m4a : " , "quality" : quality[4:], "short_url" : bitly.shorten(url)['url'] })
+			
+			# videos.append({"ext":"Mp4 : " , "quality" : quality[5:] , "short_url" : bitly.shorten(url)['url'] })
+			# vid_json['quality'] = quality[5:]
+			# vid_json['url'] = url
+			# video.append(vid_json)
+	#		videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
 	#getting all the mp4's
 	#print ("For {}".format(quality_list[0].text))
-	resoulution = quality_list[1].find_elements_by_tag_name('a')
-	for res in resoulution :
-		if res.get_attribute('class') == "btn btn-success" :
-			continue
-		# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
-		# print (shorten_url)
-		videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
-		#print (res.get_attribute('href'))
-	#getting all the 3gp's
-	#print ("For {}".format(quality_list[-2].text))
-	resoulution = quality_list[-1].find_elements_by_tag_name('a')
-	#shortener = Shortener('Google', api_key=google_api)  #initialising link shortener
-	#shortener = Shortener('Tinyurl')
-	for res in resoulution :
-		# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
-		# print (shorten_url)
-		videos.append({"ext":"3gp : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
+	# resoulution = quality_list[1].find_elements_by_tag_name('a')
+	# for res in resoulution :
+	# 	if res.get_attribute('class') == "btn btn-success" :
+	# 		continue
+	# 	# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
+	# 	# print (shorten_url)
+	# 	videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
+	# 	#print (res.get_attribute('href'))
+	# #getting all the 3gp's
+	# #print ("For {}".format(quality_list[-2].text))
+	# resoulution = quality_list[-1].find_elements_by_tag_name('a')
+	# #shortener = Shortener('Google', api_key=google_api)  #initialising link shortener
+	# #shortener = Shortener('Tinyurl')
+	# for res in resoulution :
+	# 	# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
+	# 	# print (shorten_url)
+	# 	videos.append({"ext":"3gp : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
 	you_json = {'name' : name , 'videos' : videos}
 	driver.quit()
 	return you_json 
@@ -262,7 +280,7 @@ def inline_query(bot ,update) :
 				later = later+2
 				prev = later -1 
 				sending_search_result(bot,update,main_json['search_result'],prev=prev,later=later,msg_id=main_json['msg_id'],chat_id=main_json['chat_id'])	
-	elif update.callback_query['data'].startswith('srdwn'): 
+	elif update.callback_query['data'].startswith('srdwn'):  #user selected download after searching
 		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Downloading please wait !!!")
 		down_link = update.callback_query['data'].split('_')[1]	
 		Thread(target = handelling_download_via_url , args = (bot,update,down_link,1,update.callback_query['message']['chat']['id'])).start()
