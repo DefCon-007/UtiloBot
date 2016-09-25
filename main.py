@@ -24,7 +24,7 @@ def youtube_search (name,page) :
 	results = []
 	while a<int(page):
 		url="https://www.youtube.com/results?search_query="+name+"&page=" + str(a+1)
-		print (url)
+		#print (url)
 		try :
 			source_code=requests.get(url)  #getting page source
 		except requests.exceptions.ProxyError:
@@ -50,7 +50,7 @@ def youtube_search (name,page) :
 						flag =1
 						continue
 					video['name'] = name_link.string  #getting name
-					print (video['name'])
+					#print (video['name'])
 					video['video_link'] = "https://www.youtube.com"+name_link.get('href')
 				if flag == 1 :
 					continue
@@ -141,13 +141,13 @@ def sending_search_result(bot , update , search_result,flag_search=0 ,prev=0 , l
 	#bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = Inline_keyboard ,text = "Choose what you want to do")
 
 def handelling_download_via_url(bot,update,url,flag=0,chat_id=0):
-	print ("Video download thread started")
+	#print ("Video download thread started")
 	if flag == 0 :
 		bot.sendMessage(chat_id=update.message.chat_id,text="Awesome !! I got the video link.. Just wait few seconds !!")
 	main_json = youtube_download_via_url(url)   # ********* Add here check for wrong link ***************
 	video_list = main_json['videos']
-	print ("I got the video links as follows : ")
-	print (video_list)
+	#print ("I got the video links as follows : ")
+	#print (video_list)
 	#sending available quality
 	button_list = []
 	for video in video_list :
@@ -158,22 +158,23 @@ def handelling_download_via_url(bot,update,url,flag=0,chat_id=0):
 	else :
 		bot.sendMessage(chat_id=chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality for {}".format(main_json['name']))
 def youtube_download_via_url(base_url):
-	print ("Starting web driver")
+	#print ("Starting web driver")
 	driver = webdriver.PhantomJS(service_args=['--load-images=false'])
-	print ("Webdriver started")
+	#print ("Webdriver started")
 	bitly = bitly_api.Connection(access_token=bitly_token)
 	base_url = base_url.replace("youtube" , "getlinkyoutube")  #changing supplied youtube url to redirect it to youtubemultidownload
 	base_url = base_url.replace("https" , "http")
-	print (base_url)
+	#print (base_url)
 	driver.get(base_url)
-	print (driver.current_url)
+	#print (driver.current_url)
 	while True :
 		try:
 			name = driver.find_element_by_xpath("//h1[@class='title-video']").text
 			break
 		except selenium.common.exceptions.NoSuchElementException:
-			print ("wait")
-	print ("Getting detalis for {}".format(name))
+			print ("wait loading")
+			pass
+	#print ("Getting detalis for {}".format(name))
 	# quality_list = driver.find_element_by_xpath("//*[@id='Download_Quality']/ul").find_elements_by_tag_name('li')
 	videos = []
 	for qua_div in driver.find_elements_by_xpath("//div[@class='col-md-4 downbuttonbox']"):
@@ -188,31 +189,6 @@ def youtube_download_via_url(base_url):
 			videos.append({"ext":"3gp : " , "quality" : quality[4:] , "short_url" : bitly.shorten(url)['url'] })
 		if "m4a" in quality :
 			videos.append({"ext":"m4a : " , "quality" : quality[4:], "short_url" : bitly.shorten(url)['url'] })
-			
-			# videos.append({"ext":"Mp4 : " , "quality" : quality[5:] , "short_url" : bitly.shorten(url)['url'] })
-			# vid_json['quality'] = quality[5:]
-			# vid_json['url'] = url
-			# video.append(vid_json)
-	#		videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
-	#getting all the mp4's
-	#print ("For {}".format(quality_list[0].text))
-	# resoulution = quality_list[1].find_elements_by_tag_name('a')
-	# for res in resoulution :
-	# 	if res.get_attribute('class') == "btn btn-success" :
-	# 		continue
-	# 	# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
-	# 	# print (shorten_url)
-	# 	videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
-	# 	#print (res.get_attribute('href'))
-	# #getting all the 3gp's
-	# #print ("For {}".format(quality_list[-2].text))
-	# resoulution = quality_list[-1].find_elements_by_tag_name('a')
-	# #shortener = Shortener('Google', api_key=google_api)  #initialising link shortener
-	# #shortener = Shortener('Tinyurl')
-	# for res in resoulution :
-	# 	# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
-	# 	# print (shorten_url)
-	# 	videos.append({"ext":"3gp : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
 	you_json = {'name' : name , 'videos' : videos}
 	driver.quit()
 	return you_json 
@@ -222,7 +198,7 @@ def youtube_download_via_url(base_url):
 # 	print(full_path)
 # 	bot.sendDocument(chat_id=chat_id , document = full_path)
 def link_sender(bot , update):
-	print ("Starting Thread")
+	#print ("Starting Thread")
 	file_url = bot.getFile(update.message.document.file_id)['file_path']  #getting file download url 
 	urllib.request.urlretrieve(file_url , "./{}".format(update.message.document.file_name))    # downloading file
 	file_local_path = os.path.abspath("./{}".format(update.message.document.file_name))  #getting absolute path of the file 
@@ -248,7 +224,7 @@ def inline_query(bot ,update) :
 	#bot.answerCallbackQuery(text = "HII")
 	#print (update.callback_query)
 	if update.callback_query['data'] == "1_ser" :  #this means user selected the search option 
-		print("Search")
+	#	print("Search")
 		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Send whatever you want to search on YouTube and after '-' no. of pages you want to search (e.g. : Selena Gomez - 2)")
 		Flag = "1_ser"
 	elif update.callback_query['data'] == "2_dwn" :  #this means user selected the download via url option
@@ -288,11 +264,11 @@ def echo(bot, update):
 	global Flag
 	#if update.message.text == "Download video via url" :
 	if Flag == "2_dwn" :  #this means user selected the download via url option and sent the url
-		print ("Got the video link")
+		#print ("Got the video link")
 		Flag = None
 		Thread(target = handelling_download_via_url , args = (bot,update,update.message.text,)).start()
 	elif Flag == "1_ser" :
-		print ("Got the search query")
+		#print ("Got the search query")
 		Flag = None
 		Thread(target = handelling_youtube_search , args = (bot , update ,)).start()
 	else :
