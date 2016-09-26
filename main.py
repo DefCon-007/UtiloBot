@@ -50,7 +50,6 @@ def youtube_search (name,page) :
 						flag =1
 						continue
 					video['name'] = name_link.string  #getting name
-					print (video['name'])
 					video['video_link'] = "https://www.youtube.com"+name_link.get('href')
 				if flag == 1 :
 					continue
@@ -172,6 +171,7 @@ def youtube_download_via_url(base_url):
 			name = driver.find_element_by_xpath("//h1[@class='title-video']").text
 			break
 		except selenium.common.exceptions.NoSuchElementException:
+			print (driver.current_url)
 			print ("wait")
 	print ("Getting detalis for {}".format(name))
 	# quality_list = driver.find_element_by_xpath("//*[@id='Download_Quality']/ul").find_elements_by_tag_name('li')
