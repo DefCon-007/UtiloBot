@@ -200,7 +200,7 @@ def youtube_download_via_url(base_url):
 				logger.addLog("Stoping download due to NoElementEception")
 				driver.quit()
 				return 0
-
+			i+=1
 			time.sleep(1)
 			logger.addLog (driver.current_url)
 			logger.addLog ("wait")
@@ -304,7 +304,7 @@ def link_sender(bot,chat_id,file_id,file_name,flag="doc"):
 	bot.sendMessage(chat_id=chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(file_name,links['down'],links['del']) , disable_web_page_preview=True)
 	os.remove(file_local_path)
 def start(bot, update):
-	bot.sendMessage(chat_id=update.message.chat_id, text="I'm a bot, please talk to me!")
+	bot.sendMessage(chat_id=update.message.chat_id, text="I am an awesome bot. Send /help to know my secrets.")
 # def get_file () :
 # 	bot.getFile(chat_id=update.message.chat_id , )
 def documents(bot, update):

@@ -12,6 +12,7 @@ def main(file_path):
 	bitly = bitly_api.Connection(access_token=bitly_token)
 
 	driver = webdriver.PhantomJS()
+	logger.addLog ("opening expire box")
 	driver.get('http://expirebox.com/')
 	file_upload = driver.find_element_by_id('fileupload')  #finding the file upload element
 	logger.addLog ("Uploading file please wait")
