@@ -103,7 +103,7 @@ def sending_search_result(bot , update , search_result,flag_search=0 ,prev=0 , l
 		prev_text = "Previous"
 	else : 
 		prev_text = "Nothing More"
-	if later != len(search_result) -1 :
+	if later < len(search_result) -1 :
 		later_text = "Next" 
 	else :
 		later_text = "Nothing More" 
@@ -111,8 +111,11 @@ def sending_search_result(bot , update , search_result,flag_search=0 ,prev=0 , l
 	i = 0
 	index = prev
 	while (i<2) :
-		if 'description' not in search_result[index].keys() : #checking if description is present for the video 
-			search_result[index]['description'] = " "
+		try :
+			if 'description' not in search_result[index].keys() : #checking if description is present for the video
+				search_result[index]['description'] = " "
+		except IndexError:
+			return 0
 		message = message + '''
 		<strong>{}. {}</strong>
 		<i>{}</i>
@@ -254,11 +257,6 @@ def youtube_download_via_url(base_url):
 	you_json = {'name' : name , 'videos' : videos}
 	driver.quit()
 	return you_json
-
-# def send_video(chat_id , file_name,bot):
-# 	full_path = os.path.abspath("./{}".format(file_name))
-# 	logger.addLog(full_path)
-# 	bot.sendDocument(chat_id=chat_id , document = full_path)
 def link_sender(bot,chat_id,file_id,file_name,flag="doc"):
 	logger.addLog ("Starting file download Thread")
 	file_url = bot.getFile(file_id)['file_path']  #getting file download url
@@ -330,7 +328,7 @@ def file_video(bot,update):
 	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "vid_", "vid")).start()
 def file_voice(bot,update):
 	file_id = update.message.voice.file_id
-	bot.sendMessage(chat_id=update.message.chat_id,text="I got the your voice clip\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
+	bot.sendMessage(chat_id=update.message.chat_id,text="I got your voice clip\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
 	logger.addLog("Starting thread for voice")
 	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "voice_", "voc")).start()
 def file_image(bot,update) :
@@ -441,7 +439,15 @@ def error_callback(bot, update, error):
     except TelegramError:
     	logger.addLog (6)
         # handle all other telegram related errors
-
+def bot_help(bot,update):
+	bot.sendMessage(chat_id=update.message.chat_id,text="<strong>1. Using file link generator : </strong>\nSimply "
+														"send your file to the bot and rest bot will see.You can record or send a video , "
+														"capture or send a image , send audio files. Inshort  you can send any kind of file. You can "
+														"also send  voice clips.\n<strong>2. Using the youtube functionaility :</strong>\nTo use this first send "
+														"<strong>/youtube</strong> .Now choose one of the options.\n(a)Search youtube :\nAfter selecting this option you "
+														"can send what you want search on youtube with how many pages of youtube you want to search.You will nicely get the search "
+														"results along with video download button after clicking which you can select the video which you want to download.\n(b) Download "
+														"via url button :\nAfter clicking it just send the video URL and then select which quality video you want and enjoy the video.",parse_mode="HTML")
 Flag = None
 you_obj = None
 updater = Updater(token=token)
@@ -450,6 +456,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 #creating handlers
 start_handler = CommandHandler('start', start)
 youtube_handler = CommandHandler('youtube' , youtube_keyboard)
+help_handler = CommandHandler('help' , bot_help)
 inline_query_handler = CallbackQueryHandler(inline_query)
 echo_handler = MessageHandler([Filters.text], echo)
 doc_handler = MessageHandler([Filters.document], documents)
@@ -461,6 +468,7 @@ echo_sticker_handler = MessageHandler([Filters.sticker],echo_sticker)
 #adding handlers to dispatcher
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
+dispatcher.add_handler(help_handler)
 dispatcher.add_handler(inline_query_handler)
 dispatcher.add_handler(echo_handler)
 dispatcher.add_error_handler(error_callback)
