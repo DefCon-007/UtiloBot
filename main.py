@@ -4,7 +4,8 @@ from telegram.ext import CommandHandler,CallbackQueryHandler,Updater,MessageHand
 import logging
 import urllib.request
 import main_short
-import os 
+import os
+import time
 from threading import Thread
 from selenium import webdriver
 import selenium.common.exceptions
@@ -13,6 +14,8 @@ from bs4 import BeautifulSoup
 #from pyshorteners import Shortener
 import bitly_api
 import json
+import Logger
+logger = Logger.Logger(name='My_Logger')
 with open('./ACCESS_TOKEN', 'r') as f:
 	token = f.readline().rstrip('\n')
 # with open('./GOOGLE_KEY', 'r') as f:
@@ -24,11 +27,18 @@ def youtube_search (name,page) :
 	results = []
 	while a<int(page):
 		url="https://www.youtube.com/results?search_query="+name+"&page=" + str(a+1)
-		print (url)
-		try :
-			source_code=requests.get(url)  #getting page source
-		except requests.exceptions.ProxyError:
-			return 0
+		logger.addLog (url)
+		i=0
+		while True :
+			try :
+				source_code=requests.get(url)  #getting page source
+				break
+			except requests.exceptions.ProxyError:
+				logger.addLog("Got requests.exceptions.ProxyError in searching")
+				if i >=3 :
+					return 0
+				i+=1
+				time.sleep(2)
 		text_source=source_code.text #converting it to text file
 		soup=BeautifulSoup(text_source,'html.parser')  # making soup object
 		for main_div in soup.findAll('div',{'class' : 'yt-lockup-content'}) :  #getting main div tag for the video
@@ -140,95 +150,144 @@ def sending_search_result(bot , update , search_result,flag_search=0 ,prev=0 , l
 	#bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = Inline_keyboard ,text = "Choose what you want to do")
 
 def handelling_download_via_url(bot,update,url,flag=0,chat_id=0):
-	print ("Video download thread started")
-	if flag == 0 :
-		bot.sendMessage(chat_id=update.message.chat_id,text="Awesome !! I got the video link.. Just wait few seconds !!")
+	logger.addLog ("Video download thread started")
+	if flag == 0 :  #this means user used the download via url option
+		chat_id = update.message.chat_id
+		bot.sendMessage(chat_id=chat_id, text="Awesome !! I got the video link.. Just wait for few seconds !!")
+		bot.sendMessage(chat_id=chat_id, text="<strong>NOTE : There are some problems with server right now so your video might not get downloaded. !!</strong>",parse_mode="HTML")
 	main_json = youtube_download_via_url(url)   # ********* Add here check for wrong link ***************
+	if main_json == 0 : #unable to open the video site
+		bot.sendMessage(chat_id=chat_id,text="Sorry I was unable to download video due to some issues. Please try again later")
+		return 0
+	elif main_json == 2 : #video site opened but no links for download found
+		bot.sendMessage(chat_id=chat_id,text="There are some problems with video you selected. Please choose a different video")
+		return 0
 	video_list = main_json['videos']
-	print ("I got the video links as follows : ")
-	print (video_list)
+	logger.addLog ("I got the video links as follows : ")
+	logger.addLog (video_list)
 	#sending available quality
 	button_list = []
 	for video in video_list :
 		button_list.append([{'text':video['ext'] + video["quality"] , 'callback_data': "vid_url" + video["short_url"]}])
 	quality_keyboard={'inline_keyboard':button_list}
 	if flag == 0 :
-		bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality")
+		bot.sendMessage(chat_id=chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality for {}".format(main_json['name']))
 	else :
 		bot.sendMessage(chat_id=chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality for {}".format(main_json['name']))
 def youtube_download_via_url(base_url):
-	print ("Starting web driver")
+	logger.addLog ("Starting web driver")
 	driver = webdriver.PhantomJS(service_args=['--load-images=false'])
-	print ("Webdriver started")
+	logger.addLog ("Webdriver started")
 	bitly = bitly_api.Connection(access_token=bitly_token)
 	base_url = base_url.replace("youtube" , "getlinkyoutube")  #changing supplied youtube url to redirect it to youtubemultidownload
 	base_url = base_url.replace("https" , "http")
-	print (base_url)
+	logger.addLog (base_url)
 	driver.get(base_url)
-	print (driver.current_url)
+	logger.addLog (driver.current_url)
+	i=0
 	while True :
 		try:
 			name = driver.find_element_by_xpath("//h1[@class='title-video']").text
 			break
 		except selenium.common.exceptions.NoSuchElementException:
-			print (driver.current_url)
-			print ("wait")
-	print ("Getting detalis for {}".format(name))
+			if i ==3 :
+				driver.get(base_url)
+				logger.addLog("opening the url again")
+			elif i >=4 :
+				logger.addLog("Stoping download due to NoElementEception")
+				driver.quit()
+				return 0
+
+			time.sleep(1)
+			logger.addLog (driver.current_url)
+			logger.addLog ("wait")
+	logger.addLog ("Getting detalis for {}".format(name))
 	# quality_list = driver.find_element_by_xpath("//*[@id='Download_Quality']/ul").find_elements_by_tag_name('li')
 	videos = []
-	for qua_div in driver.find_elements_by_xpath("//div[@class='col-md-4 downbuttonbox']"):
-		anchor = qua_div.find_element_by_tag_name('a')
-		url = anchor.get_attribute('href')  #getting video url
-		url = url.replace("%20-%20[www.getlinkyoutube.com]","")  #removing getlinkyoutube from file name
-		span =qua_div.find_element_by_tag_name('span') 
-		quality = span.text  # getting video url
-		if "Mp4" in quality :
-			videos.append({"ext":"Mp4 : " , "quality" : quality[4:] , "short_url" : bitly.shorten(url)['url'] })
-		if "3gp" in quality :
-			videos.append({"ext":"3gp : " , "quality" : quality[4:] , "short_url" : bitly.shorten(url)['url'] })
-		if "m4a" in quality :
-			videos.append({"ext":"m4a : " , "quality" : quality[4:], "short_url" : bitly.shorten(url)['url'] })
-			
+	while True :
+		for qua_div in driver.find_elements_by_xpath("//div[@class='col-md-4 downbuttonbox']"):
+			anchor = qua_div.find_element_by_tag_name('a')
+			url = anchor.get_attribute('href')  #getting video url
+			url = url.replace("%20-%20[www.getlinkyoutube.com]","")  #removing getlinkyoutube from file name
+			span =qua_div.find_element_by_tag_name('span')
+			quality = span.text  # getting video url
+			if "Mp4" in quality :
+				videos.append({"ext":"Mp4 : " , "quality" : quality[4:] , "short_url" : bitly.shorten(url)['url'] })
+			if "3gp" in quality :
+				videos.append({"ext":"3gp : " , "quality" : quality[4:] , "short_url" : bitly.shorten(url)['url'] })
+			if "m4a" in quality :
+				videos.append({"ext":"m4a : " , "quality" : quality[4:], "short_url" : bitly.shorten(url)['url'] })
+
 			# videos.append({"ext":"Mp4 : " , "quality" : quality[5:] , "short_url" : bitly.shorten(url)['url'] })
 			# vid_json['quality'] = quality[5:]
 			# vid_json['url'] = url
 			# video.append(vid_json)
 	#		videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
 	#getting all the mp4's
-	#print ("For {}".format(quality_list[0].text))
+	#logger.addLog ("For {}".format(quality_list[0].text))
 	# resoulution = quality_list[1].find_elements_by_tag_name('a')
 	# for res in resoulution :
 	# 	if res.get_attribute('class') == "btn btn-success" :
 	# 		continue
 	# 	# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
-	# 	# print (shorten_url)
+	# 	# logger.addLog (shorten_url)
 	# 	videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
-	# 	#print (res.get_attribute('href'))
+	# 	#logger.addLog (res.get_attribute('href'))
 	# #getting all the 3gp's
-	# #print ("For {}".format(quality_list[-2].text))
+	# #logger.addLog ("For {}".format(quality_list[-2].text))
 	# resoulution = quality_list[-1].find_elements_by_tag_name('a')
 	# #shortener = Shortener('Google', api_key=google_api)  #initialising link shortener
 	# #shortener = Shortener('Tinyurl')
 	# for res in resoulution :
 	# 	# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
-	# 	# print (shorten_url)
+	# 	# logger.addLog (shorten_url)
 	# 	videos.append({"ext":"3gp : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
+		if i >= 3:
+			logger.addLog("Unable to get video links")
+			driver.quit()
+			return 2
+		if len(videos) == 0 :
+			time.sleep(1)
+			i+=1
+		else :
+			break
 	you_json = {'name' : name , 'videos' : videos}
 	driver.quit()
-	return you_json 
+	return you_json
 
 # def send_video(chat_id , file_name,bot):
 # 	full_path = os.path.abspath("./{}".format(file_name))
-# 	print(full_path)
+# 	logger.addLog(full_path)
 # 	bot.sendDocument(chat_id=chat_id , document = full_path)
 def link_sender(bot , update):
-	print ("Starting Thread")
-	file_url = bot.getFile(update.message.document.file_id)['file_path']  #getting file download url 
-	urllib.request.urlretrieve(file_url , "./{}".format(update.message.document.file_name))    # downloading file
-	file_local_path = os.path.abspath("./{}".format(update.message.document.file_name))  #getting absolute path of the file 
+	logger.addLog ("Starting file download Thread")
+	file_url = bot.getFile(update.message.document.file_id)['file_path']  #getting file download url
+	i=0
+	while True :
+		try :
+			logger.addLog("downloading File")
+			urllib.request.urlretrieve(file_url , "./{}".format(update.message.document.file_name))    # downloading file
+
+			break
+		except urllib.error.URLError :
+			if i>=2 :
+				bot.sendMessage(chat_id=update.message.chat_id,text="I was unable to process the file. Please try again later")
+				return 0
+			i+=1
+			time.sleep(2)
+			logger.addLog("File download error : urllib.error.URLError")
+
+	logger.addLog("file downloaded")
+	file_local_path = os.path.abspath("./{}".format(update.message.document.file_name))  #getting absolute path of the file
 	links = main_short.main(file_local_path)   #uploading and shorting the file
-	bot.sendMessage(chat_id=update.message.chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(update.message.document.file_name,links['down'],links['del']))
-	os.remove(file_local_path)
+	if links == 0 :
+		links = main_short.main(file_local_path)   #trying for uploading and shorting the file again
+		if links == 0 :
+			bot.sendMessage(chat_id=update.message.chat_id, text="I was unable to process the file. Please try again later" , disable_web_page_preview=True)
+			os.remove(file_local_path)
+	else :
+		bot.sendMessage(chat_id=update.message.chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(update.message.document.file_name,links['down'],links['del']) , disable_web_page_preview=True)
+		os.remove(file_local_path)
 def start(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I'm a bot, please talk to me!")
 def get_file () :
@@ -236,7 +295,7 @@ def get_file () :
 def documents(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
 	Thread(target = link_sender , args = (bot , update )).start()
-	#print (bot.getFile(update.message.document.file_id))
+	#logger.addLog (bot.getFile(update.message.document.file_id))
 def youtube_keyboard(bot , update):
 	#keyBut = [{'text': 'Search YouTube'} , {'text' :'Download video via url'}]
 	#replyKeyboardMakeup = {'keyboard': [keyBut], 'resize_keyboard': True, 'one_time_keyboard': True}
@@ -246,9 +305,9 @@ def youtube_keyboard(bot , update):
 def inline_query(bot ,update) :
 	global Flag
 	#bot.answerCallbackQuery(text = "HII")
-	#print (update.callback_query)
+	#logger.addLog (update.callback_query)
 	if update.callback_query['data'] == "1_ser" :  #this means user selected the search option 
-		print("Search")
+		logger.addLog("Search")
 		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Send whatever you want to search on YouTube and after '-' no. of pages you want to search (e.g. : Selena Gomez - 2)")
 		Flag = "1_ser"
 	elif update.callback_query['data'] == "2_dwn" :  #this means user selected the download via url option
@@ -257,7 +316,7 @@ def inline_query(bot ,update) :
 		#download_video_via_url()
 	elif update.callback_query['data'].startswith('vid_url'):  #sending the short url of the specified quality
 		video_url = update.callback_query['data'][7:]
-		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text=video_url)
+		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text=video_url ,disable_web_page_preview=True)
 	elif update.callback_query['data'].startswith('ser'):  #this is for search navigation of the youtube results
 		text= update.callback_query['data'].split('_')[1]
 		text_other = update.callback_query['data'].split('_')[2]
@@ -281,44 +340,45 @@ def inline_query(bot ,update) :
 				prev = later -1 
 				sending_search_result(bot,update,main_json['search_result'],prev=prev,later=later,msg_id=main_json['msg_id'],chat_id=main_json['chat_id'])	
 	elif update.callback_query['data'].startswith('srdwn'):  #user selected download after searching
-		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Downloading please wait !!!")
+		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'],text="Downloading please wait !!! This might take some time but believe me waiting is worth it !!")
+		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'],text="<strong> NOTE : There are some problems with server right now so your video might not get downloaded. !!</strong>",parse_mode="HTML")
 		down_link = update.callback_query['data'].split('_')[1]	
 		Thread(target = handelling_download_via_url , args = (bot,update,down_link,1,update.callback_query['message']['chat']['id'])).start()
 def echo(bot, update):
 	global Flag
 	#if update.message.text == "Download video via url" :
 	if Flag == "2_dwn" :  #this means user selected the download via url option and sent the url
-		print ("Got the video link")
+		logger.addLog ("Got the video link")
 		Flag = None
 		Thread(target = handelling_download_via_url , args = (bot,update,update.message.text,)).start()
 	elif Flag == "1_ser" :
-		print ("Got the search query")
+		logger.addLog ("Got the search query")
 		Flag = None
 		Thread(target = handelling_youtube_search , args = (bot , update ,)).start()
 	else :
 		bot.sendMessage(chat_id=update.message.chat_id, text=update.message.text)
 	# ne = bot.editMessageText(message_id=int(message_obj.message_id) , chat_id=update.message.chat_id,text="This is updated message")
-	# print (ne.message_id)
+	# logger.addLog (ne.message_id)
 def error_callback(bot, update, error):
     try:
         raise error
     except Unauthorized:
-    	print (1)
+    	logger.addLog (1)
         # remove update.message.chat_id from conversation list
     except BadRequest:
-    	print (2)
+    	logger.addLog (2)
         # handle malformed requests - read more below!
     except TimedOut:
-    	print (3)
+    	logger.addLog (3)
         # handle slow connection problems
     except NetworkError:
-    	print (4)
+    	logger.addLog (4)
         # handle other connection problems
     except ChatMigrated as e:
-    	print (5)
+    	logger.addLog (5)
         # the chat_id of a group has changed, use e.new_chat_id instead
     except TelegramError:
-    	print (6)
+    	logger.addLog (6)
         # handle all other telegram related errors
 
 Flag = None

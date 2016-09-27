@@ -4,23 +4,41 @@ from selenium import webdriver
 import selenium.common.exceptions
 import time
 #import tinyurl_shortbox
+import Logger
+logger = Logger.Logger(name='My_Logger')
 def main(file_path):
 	with open('./BITLY_ACCESS_TOKEN', 'r') as f:
 		bitly_token = f.readline().rstrip('\n')
 	bitly = bitly_api.Connection(access_token=bitly_token)
 
-	driver = webdriver.Chrome()
+	driver = webdriver.PhantomJS()
 	driver.get('http://expirebox.com/')
 	file_upload = driver.find_element_by_id('fileupload')  #finding the file upload element
-	print ("Uploading file please wait")
-	file_upload.send_keys(file_path)  #uploading file
+	logger.addLog ("Uploading file please wait")
+	i=0 
+	while True :
+		try : 
+			file_upload.send_keys(file_path)  #uploading file
+			break 
+		except Exception as e :
+			if i >= 2 :
+				return 0
+			i +=1
+			logger.addLog ("GOt erro : {}".format(str(e)))
+			time.sleep(4)
+			driver.get('http://expirebox.com/')
+			file_upload = driver.find_element_by_id('fileupload')  #finding the file upload element
 	while True :
 		try :
 			del_button = driver.find_element_by_xpath("//button[@class='btn btn-danger btndel']")
 			del_button.click()
-			print ("Upload Complete")
+			logger.addLog ("Upload Complete")
 			break
 		except selenium.common.exceptions.ElementNotVisibleException :
+			if i >= 3 :
+				return 0
+			i += 1
+			logger.addLog("Got Element not visible error")
 			time.sleep(1)
 			pass
 	time.sleep(5)
@@ -46,7 +64,7 @@ def main(file_path):
 		file_name = original_file_name + str(count)
 		count = count + 1 
 	driver.quit()
-	print (links)
+	logger.addLog (links)
 	driver.quit()
 	return links 
 if __name__ == "__main__":
