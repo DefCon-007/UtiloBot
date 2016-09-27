@@ -259,7 +259,7 @@ def youtube_download_via_url(base_url):
 # 	full_path = os.path.abspath("./{}".format(file_name))
 # 	logger.addLog(full_path)
 # 	bot.sendDocument(chat_id=chat_id , document = full_path)
-def link_sender(bot , update):
+def link_sender(bot,update):
 	logger.addLog ("Starting file download Thread")
 	file_url = bot.getFile(update.message.document.file_id)['file_path']  #getting file download url
 	i=0
@@ -279,19 +279,19 @@ def link_sender(bot , update):
 
 	logger.addLog("file downloaded")
 	file_local_path = os.path.abspath("./{}".format(update.message.document.file_name))  #getting absolute path of the file
-	links = main_short.main(file_local_path)   #uploading and shorting the file
+	links = main_short.main(file_local_path)   #uploading and shortening the file
 	if links == 0 :
 		links = main_short.main(file_local_path)   #trying for uploading and shorting the file again
 		if links == 0 :
-			bot.sendMessage(chat_id=update.message.chat_id, text="I was unable to process the file. Please try again later" , disable_web_page_preview=True)
+			bot.sendMessage(chat_id=update.message.chat_id, text="I was unable to process {}. Please try again later".format(update.message.document.file_name))
 			os.remove(file_local_path)
 	else :
 		bot.sendMessage(chat_id=update.message.chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(update.message.document.file_name,links['down'],links['del']) , disable_web_page_preview=True)
 		os.remove(file_local_path)
 def start(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I'm a bot, please talk to me!")
-def get_file () :
-	bot.getFile(chat_id=update.message.chat_id , )
+# def get_file () :
+# 	bot.getFile(chat_id=update.message.chat_id , )
 def documents(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
 	Thread(target = link_sender , args = (bot , update )).start()

@@ -24,7 +24,7 @@ def main(file_path):
 			if i >= 2 :
 				return 0
 			i +=1
-			logger.addLog ("GOt erro : {}".format(str(e)))
+			logger.addLog ("Got erro : {}".format(str(e)))
 			time.sleep(4)
 			driver.get('http://expirebox.com/')
 			file_upload = driver.find_element_by_id('fileupload')  #finding the file upload element
@@ -49,23 +49,22 @@ def main(file_path):
 	#shortening urls
    # file_name = input("Enter a link name for : tinyurl.com/abc (Leave blank to use default filename) : ")
   #if file_name is "" : 
-	file_name = file_path.split('/')[-1][0:5]
-	original_file_name = file_name
-	count = 1
+	# file_name = file_path.split('/')[-1][0:5]
+	# original_file_name = file_name
+	# count = 1
 	links = {"down": "" , "del" : ""}
-	flag = 1
+	# flag = 1
 	while flag:
 		links['down'] =bitly.shorten(down_link)['url']
 		links['del'] =bitly.shorten(del_link)['url']
 		#links['down'] = tinyurl_shortbox.shorten(down_link , "SB-"+file_name)
 		#links['del'] = tinyurl_shortbox.shorten(del_link , "del-"+file_name)
-		if links['down'] != 1:
-			flag = 0 
-		file_name = original_file_name + str(count)
-		count = count + 1 
+		# if links['down'] != 1:
+		# 	flag = 0
+		# file_name = original_file_name + str(count)
+		# count = count + 1
 	driver.quit()
 	logger.addLog (links)
-	driver.quit()
 	return links 
 if __name__ == "__main__":
 	main(sys.argv[1])
