@@ -259,34 +259,34 @@ def youtube_download_via_url(base_url):
 # 	full_path = os.path.abspath("./{}".format(file_name))
 # 	logger.addLog(full_path)
 # 	bot.sendDocument(chat_id=chat_id , document = full_path)
-def link_sender(bot,update):
+def link_sender(bot,chat_id,file_id,file_name):
 	logger.addLog ("Starting file download Thread")
-	file_url = bot.getFile(update.message.document.file_id)['file_path']  #getting file download url
+	file_url = bot.getFile(file_id)['file_path']  #getting file download url
 	i=0
 	while True :
 		try :
 			logger.addLog("downloading File")
-			urllib.request.urlretrieve(file_url , "./{}".format(update.message.document.file_name))    # downloading file
+			urllib.request.urlretrieve(file_url , "./{}".format(file_name))    # downloading file
 
 			break
 		except urllib.error.URLError :
 			if i>=2 :
-				bot.sendMessage(chat_id=update.message.chat_id,text="I was unable to process the file. Please try again later")
+				bot.sendMessage(chat_id=chat_id,text="I was unable to process the file. Please try again later")
 				return 0
 			i+=1
 			time.sleep(2)
 			logger.addLog("File download error : urllib.error.URLError")
 
 	logger.addLog("file downloaded")
-	file_local_path = os.path.abspath("./{}".format(update.message.document.file_name))  #getting absolute path of the file
+	file_local_path = os.path.abspath("./{}".format(file_name))  #getting absolute path of the file
 	links = main_short.main(file_local_path)   #uploading and shortening the file
 	if links == 0 :
 		links = main_short.main(file_local_path)   #trying for uploading and shorting the file again
 		if links == 0 :
-			bot.sendMessage(chat_id=update.message.chat_id, text="I was unable to process {}. Please try again later".format(update.message.document.file_name))
+			bot.sendMessage(chat_id=chat_id, text="I was unable to process {}. Please try again later".format(file_name))
 			os.remove(file_local_path)
 	else :
-		bot.sendMessage(chat_id=update.message.chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(update.message.document.file_name,links['down'],links['del']) , disable_web_page_preview=True)
+		bot.sendMessage(chat_id=chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(file_name,links['down'],links['del']) , disable_web_page_preview=True)
 		os.remove(file_local_path)
 def start(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I'm a bot, please talk to me!")
@@ -294,8 +294,34 @@ def start(bot, update):
 # 	bot.getFile(chat_id=update.message.chat_id , )
 def documents(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
-	Thread(target = link_sender , args = (bot , update )).start()
+	Thread(target = link_sender , args = (bot , update.message.chat_id ,update.message.document.file_id, update.message.document.file_name)).start()
 	#logger.addLog (bot.getFile(update.message.document.file_id))
+def file_image(bot,update) :
+	#bot.sendMessage(chat_id=update.message.chat_id,text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
+	logger.addLog("In image handling function")
+	file_id = update.message.photo[0]['file_id']
+	logger.addLog("getting image url")
+	file_url = bot.getFile(file_id)['file_path'] #getting file url to get the file name
+	logger.addLog("Got image url")
+	file_name = "img_"+file_url.split('/')[-1]
+	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, file_name)).start()
+
+
+# photo_selector_button = []
+	# for photo in update.message.photo :
+	# 	file_id = photo['file_id']
+	# 	file_url = bot.getFile(file_id)['file_path']  #getting file url to get a file name
+	# 	file_name = file_url.split('/')[-1]
+	# 	#photo_selector_button.append([{'text':"Size {} bytes".format(photo['file_size']) , 'callback_data':'downpic_{}_{}_{}'.format(update.message.chat_id,file_id,file_name)}])
+	# 	photo_selector_button.append([{'text': "Size {} bytes".format(photo['file_size']),'callback_data': 'downpic_{}_{}_{}'.format("a", file_id,"a")}])
+	# photo_selector_keyboard = {'inline_keyboard' : photo_selector_button}
+	# bot.sendMessage(chat_id=update.message.chat_id, reply_markup=photo_selector_keyboard,text="For which photo you want links : " )
+	# print (update.message.photo[0])
+	# file_id = update.message.photo[0]['file_id']
+	# file_url = bot.getFile(file_id)['file_path']
+	# file_name = file_url.split('/')[-1]
+	# print (file_url)
+	# urllib.request.urlretrieve(file_url, "./{}".format(file_name))
 def youtube_keyboard(bot , update):
 	#keyBut = [{'text': 'Search YouTube'} , {'text' :'Download video via url'}]
 	#replyKeyboardMakeup = {'keyboard': [keyBut], 'resize_keyboard': True, 'one_time_keyboard': True}
@@ -386,15 +412,19 @@ you_obj = None
 updater = Updater(token=token)
 dispatcher = updater.dispatcher
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',level=logging.INFO)
+#creating handlers
 start_handler = CommandHandler('start', start)
 youtube_handler = CommandHandler('youtube' , youtube_keyboard)
 inline_query_handler = CallbackQueryHandler(inline_query)
+echo_handler = MessageHandler([Filters.text], echo)
+doc_handler = MessageHandler([Filters.document], documents)
+img_handler = MessageHandler([Filters.photo],file_image)
+#adding handlers to dispatcher
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
 dispatcher.add_handler(inline_query_handler)
-echo_handler = MessageHandler([Filters.text], echo)
 dispatcher.add_handler(echo_handler)
 dispatcher.add_error_handler(error_callback)
-doc_handler = MessageHandler([Filters.document], documents)
 dispatcher.add_handler(doc_handler)
+dispatcher.add_handler(img_handler)
 updater.start_polling()
