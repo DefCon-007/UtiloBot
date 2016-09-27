@@ -259,10 +259,19 @@ def youtube_download_via_url(base_url):
 # 	full_path = os.path.abspath("./{}".format(file_name))
 # 	logger.addLog(full_path)
 # 	bot.sendDocument(chat_id=chat_id , document = full_path)
-def link_sender(bot,chat_id,file_id,file_name):
+def link_sender(bot,chat_id,file_id,file_name,flag="doc"):
 	logger.addLog ("Starting file download Thread")
 	file_url = bot.getFile(file_id)['file_path']  #getting file download url
+	if flag == "aud" :
+		#for audio
+		file_name = file_name + ".{}".format(file_url.split('/')[-1].split('.')[-1])  #getting audio extensior
+
+	if flag == "img" :
+		file_name = file_name + file_url.split('/')[-1]
+		#for image
+		sf = 0
 	i=0
+	logger.addLog ("Concerned file : {}".format(file_name) )
 	while True :
 		try :
 			logger.addLog("downloading File")
@@ -271,7 +280,7 @@ def link_sender(bot,chat_id,file_id,file_name):
 			break
 		except urllib.error.URLError :
 			if i>=2 :
-				bot.sendMessage(chat_id=chat_id,text="I was unable to process the file. Please try again later")
+				bot.sendMessage(chat_id=chat_id,text="I was unable to download the file. Please try again later")
 				return 0
 			i+=1
 			time.sleep(2)
@@ -283,28 +292,46 @@ def link_sender(bot,chat_id,file_id,file_name):
 	if links == 0 :
 		links = main_short.main(file_local_path)   #trying for uploading and shorting the file again
 		if links == 0 :
+			logger.addLog("Unable to download file: replying with error msg Return Code 0")
 			bot.sendMessage(chat_id=chat_id, text="I was unable to process {}. Please try again later".format(file_name))
 			os.remove(file_local_path)
-	else :
-		bot.sendMessage(chat_id=chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(file_name,links['down'],links['del']) , disable_web_page_preview=True)
-		os.remove(file_local_path)
+			return 0
+	elif links == 3 :
+		links = main_short.main(file_local_path)  # trying for uploading and shorting the file again
+		if links == 3 or links == 0 :
+			logger.addLog("Unable to download file: replying with error msg return code 3")
+			bot.sendMessage(chat_id=chat_id,text="I was unable to process {}. Please try again later".format(file_name))
+			os.remove(file_local_path)
+			return 0
+	bot.sendMessage(chat_id=chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(file_name,links['down'],links['del']) , disable_web_page_preview=True)
+	os.remove(file_local_path)
 def start(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I'm a bot, please talk to me!")
 # def get_file () :
 # 	bot.getFile(chat_id=update.message.chat_id , )
 def documents(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
+	logger.addLog("Starting thread for document")
 	Thread(target = link_sender , args = (bot , update.message.chat_id ,update.message.document.file_id, update.message.document.file_name)).start()
 	#logger.addLog (bot.getFile(update.message.document.file_id))
+def file_audio(bot,update):
+	file_id = update.message.audio.file_id
+	title = update.message.audio.title
+	bot.sendMessage(chat_id=update.message.chat_id,text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(title))
+	#print(update.message.audio.duration)
+	#print (update.message.audio.mime_type)
+	#print (bot.getFile(update.message.audio.file_id)['file_path'])
+	logger.addLog("Starting thread for audio")
+	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, title,"aud")).start()
+
+
 def file_image(bot,update) :
-	#bot.sendMessage(chat_id=update.message.chat_id,text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
-	logger.addLog("In image handling function")
+	bot.sendMessage(chat_id=update.message.chat_id,text="I got the image\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
 	file_id = update.message.photo[0]['file_id']
-	logger.addLog("getting image url")
-	file_url = bot.getFile(file_id)['file_path'] #getting file url to get the file name
-	logger.addLog("Got image url")
-	file_name = "img_"+file_url.split('/')[-1]
-	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, file_name)).start()
+	#file_url = bot.getFile(file_id)['file_path'] #getting file url to get the file name
+	file_name = "img_"
+	logger.addLog("Starting thread for image")
+	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, file_name,"img")).start()
 
 
 # photo_selector_button = []
@@ -419,6 +446,7 @@ inline_query_handler = CallbackQueryHandler(inline_query)
 echo_handler = MessageHandler([Filters.text], echo)
 doc_handler = MessageHandler([Filters.document], documents)
 img_handler = MessageHandler([Filters.photo],file_image)
+audio_handler = MessageHandler([Filters.audio],file_audio)
 #adding handlers to dispatcher
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
@@ -427,4 +455,5 @@ dispatcher.add_handler(echo_handler)
 dispatcher.add_error_handler(error_callback)
 dispatcher.add_handler(doc_handler)
 dispatcher.add_handler(img_handler)
+dispatcher.add_handler(audio_handler)
 updater.start_polling()

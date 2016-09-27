@@ -22,9 +22,10 @@ def main(file_path):
 			break 
 		except Exception as e :
 			if i >= 2 :
+				driver.quit()
 				return 0
 			i +=1
-			logger.addLog ("Got erro : {}".format(str(e)))
+			logger.addLog ("Got error : {}".format(str(e)))
 			time.sleep(4)
 			driver.get('http://expirebox.com/')
 			file_upload = driver.find_element_by_id('fileupload')  #finding the file upload element
@@ -36,11 +37,17 @@ def main(file_path):
 			break
 		except selenium.common.exceptions.ElementNotVisibleException :
 			if i >= 3 :
+				driver.quit()
 				return 0
 			i += 1
 			logger.addLog("Got Element not visible error")
 			time.sleep(1)
 			pass
+		except http.client.RemoteDisconnected :
+			logger.addLog("Got http.client.RemoteDisconnected error recalling the function")
+			driver.quit()
+			return 3
+
 	time.sleep(5)
 	driver.switch_to_window(driver.window_handles[1])  #switching to the new tab which have links
 	del_link = driver.current_url + "?proceed=1" #getting delete file link
@@ -54,9 +61,8 @@ def main(file_path):
 	# count = 1
 	links = {"down": "" , "del" : ""}
 	# flag = 1
-	while flag:
-		links['down'] =bitly.shorten(down_link)['url']
-		links['del'] =bitly.shorten(del_link)['url']
+	links['down'] =bitly.shorten(down_link)['url']
+	links['del'] =bitly.shorten(del_link)['url']
 		#links['down'] = tinyurl_shortbox.shorten(down_link , "SB-"+file_name)
 		#links['del'] = tinyurl_shortbox.shorten(del_link , "del-"+file_name)
 		# if links['down'] != 1:
