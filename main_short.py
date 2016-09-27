@@ -29,6 +29,7 @@ def main(file_path):
 			time.sleep(4)
 			driver.get('http://expirebox.com/')
 			file_upload = driver.find_element_by_id('fileupload')  #finding the file upload element
+	time.sleep(2)
 	while True :
 		try :
 			del_button = driver.find_element_by_xpath("//button[@class='btn btn-danger btndel']")
