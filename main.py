@@ -418,6 +418,8 @@ def echo(bot, update):
 		bot.sendMessage(chat_id=update.message.chat_id, text=update.message.text)
 	# ne = bot.editMessageText(message_id=int(message_obj.message_id) , chat_id=update.message.chat_id,text="This is updated message")
 	# logger.addLog (ne.message_id)
+def echo_sticker(bot,update):
+	bot.sendSticker(chat_id=update.message.chat_id,sticker=update.message.sticker.file_id)
 def error_callback(bot, update, error):
     try:
         raise error
@@ -455,6 +457,7 @@ img_handler = MessageHandler([Filters.photo],file_image)
 audio_handler = MessageHandler([Filters.audio],file_audio)
 video_handler = MessageHandler([Filters.video],file_video)
 voice_handler = MessageHandler([Filters.voice],file_voice)
+echo_sticker_handler = MessageHandler([Filters.sticker],echo_sticker)
 #adding handlers to dispatcher
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
@@ -466,4 +469,5 @@ dispatcher.add_handler(img_handler)
 dispatcher.add_handler(audio_handler)
 dispatcher.add_handler(video_handler)
 dispatcher.add_handler(voice_handler)
+dispatcher.add_handler(echo_sticker_handler)
 updater.start_polling()
