@@ -266,7 +266,7 @@ def link_sender(bot,chat_id,file_id,file_name,flag="doc"):
 		#for audio
 		file_name = file_name + ".{}".format(file_url.split('/')[-1].split('.')[-1])  #getting audio extensior
 
-	if flag == "img" :
+	if flag == "img" or flag=="vid":
 		file_name = file_name + file_url.split('/')[-1]
 		#for image
 		sf = 0
@@ -323,15 +323,17 @@ def file_audio(bot,update):
 	#print (bot.getFile(update.message.audio.file_id)['file_path'])
 	logger.addLog("Starting thread for audio")
 	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, title,"aud")).start()
-
+def file_video(bot,update):
+	file_id = update.message.video.file_id
+	bot.sendMessage(chat_id=update.message.chat_id,text="I got the video\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
+	logger.addLog("Starting thread for video")
+	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "vid_", "vid")).start()
 
 def file_image(bot,update) :
 	bot.sendMessage(chat_id=update.message.chat_id,text="I got the image\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
 	file_id = update.message.photo[0]['file_id']
-	#file_url = bot.getFile(file_id)['file_path'] #getting file url to get the file name
-	file_name = "img_"
 	logger.addLog("Starting thread for image")
-	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, file_name,"img")).start()
+	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "img_","img")).start()
 
 
 # photo_selector_button = []
@@ -447,6 +449,7 @@ echo_handler = MessageHandler([Filters.text], echo)
 doc_handler = MessageHandler([Filters.document], documents)
 img_handler = MessageHandler([Filters.photo],file_image)
 audio_handler = MessageHandler([Filters.audio],file_audio)
+video_handler = MessageHandler([Filters.video],file_video)
 #adding handlers to dispatcher
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
@@ -456,4 +459,5 @@ dispatcher.add_error_handler(error_callback)
 dispatcher.add_handler(doc_handler)
 dispatcher.add_handler(img_handler)
 dispatcher.add_handler(audio_handler)
+dispatcher.add_handler(video_handler)
 updater.start_polling()
