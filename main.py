@@ -17,6 +17,7 @@ import json
 import Logger
 import fb_reg
 import fb_main
+import sys
 from random import randint  #to get a random integer
 logger = Logger.Logger(name='My_Logger')
 with open('./ACCESS_TOKEN', 'r') as f:
@@ -427,8 +428,27 @@ def inline_query(bot ,update) :
 	elif update.callback_query['data'].startswith('srdwn'):  #user selected download after searching
 		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'],text="Downloading please wait !!! This might take some time but believe me waiting is worth it !!")
 		bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'],text="<strong> NOTE : There are some problems with server right now so your video might not get downloaded. !!</strong>",parse_mode="HTML")
-		down_link = update.callback_query['data'].split('_')[1]	
+		down_link = update.callback_query['data'].split('_')[1]
 		Thread(target = handelling_download_via_url , args = (bot,update,down_link,1,update.callback_query['message']['chat']['id'])).start()
+	elif update.callback_query['data'].startswith('joke'): #this means user wants to hear a joke
+		query = update.callback_query['data'].split("_")
+		if query[1] == "CN" :
+			Thread(target=get_joke_chuck , args=(bot,update.callback_query['message']['chat']['id'], query[-1])).start()
+def get_joke_chuck(bot,chat_id,category):
+	base_url = "http://api.icndb.com/jokes/random?limitTo=[{}]".format(category)
+	logger.addLog("Getting Joke","joke")
+	try :
+		joke_json = requests.get(base_url).json()
+		logger.addLog("Successfully got the joke")
+		bot.sendMessage(chat_id=chat_id , text=joke_json['value']['joke'])
+	except :
+		logger.addLog("Unable to get joke {} ".format(sys.exc_info()[0]))
+		bot.sendMessage(chat_id=chat_id, text="Sorry Unable to fetch joke")
+def handle_jokes(bot,update):
+	joke_buttons = [[{'text':"Chuch Norris nerdy joke" , 'callback_data' : 'joke_CN_nerdy'}],[{'text':'Chuch Norris explicit joke' , 'callback_data' : 'joke_CN_explicit'}]]
+	joke_keyboard = {'inline_keyboard': joke_buttons }
+	bot.sendMessage(chat_id=update.message.chat_id , text="Choose which joke you want" , reply_markup =joke_keyboard)
+	#Thread(target=get_joke_chuck , args=(bot,update.message.chat_id,)).start()
 def echo(bot, update):
 	global Flag
 	#if update.message.text == "Download video via url" :
@@ -455,7 +475,7 @@ def facebook_sender_handler(bot,logger):
 		logger.addLog('Starting facebook scraping',"Facebook")
 		fb_main.main(bot,logger)
 		logger.addLog("Going to sleep","Facebook") 
-		time.sleep(120)
+		time.sleep(600)
 def echo_sticker(bot,update):
 	bot.sendSticker(chat_id=update.message.chat_id,sticker=update.message.sticker.file_id)
 def error_callback(bot, update, error):
@@ -501,6 +521,7 @@ start_handler = CommandHandler('start', start)
 youtube_handler = CommandHandler('youtube' , youtube_keyboard)
 help_handler = CommandHandler('help' , bot_help) 
 facebook_handler = CommandHandler('facebook',facebook_start)
+joke_handler = CommandHandler('joke',handle_jokes)
 inline_query_handler = CallbackQueryHandler(inline_query)
 echo_handler = MessageHandler([Filters.text], echo)
 doc_handler = MessageHandler([Filters.document], documents)
@@ -513,6 +534,7 @@ echo_sticker_handler = MessageHandler([Filters.sticker],echo_sticker)
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
 dispatcher.add_handler(help_handler)
+dispatcher.add_handler(joke_handler)
 dispatcher.add_handler(facebook_handler)
 dispatcher.add_handler(inline_query_handler)
 dispatcher.add_handler(echo_handler)
