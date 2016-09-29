@@ -15,6 +15,8 @@ from bs4 import BeautifulSoup
 import bitly_api
 import json
 import Logger
+import fb_reg
+import fb_main
 logger = Logger.Logger(name='My_Logger')
 with open('./ACCESS_TOKEN', 'r') as f:
 	token = f.readline().rstrip('\n')
@@ -22,6 +24,11 @@ with open('./ACCESS_TOKEN', 'r') as f:
 # 	google_api = f.readline().rstrip('\n')
 with open('./BITLY_ACCESS_TOKEN', 'r') as f:
 	bitly_token = f.readline().rstrip('\n')
+
+
+
+
+
 def youtube_search (name,page) :
 	a=0
 	results = []
@@ -151,7 +158,6 @@ def sending_search_result(bot , update , search_result,flag_search=0 ,prev=0 , l
 			if e == "Bad Request: message is not modified" :
 				pass
 	#bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = Inline_keyboard ,text = "Choose what you want to do")
-
 def handelling_download_via_url(bot,update,url,flag=0,chat_id=0):
 	logger.addLog ("Video download thread started")
 	if flag == 0 :  #this means user used the download via url option
@@ -305,8 +311,6 @@ def link_sender(bot,chat_id,file_id,file_name,flag="doc"):
 	os.remove(file_local_path)
 def start(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I am an awesome bot. Send /help to know my secrets.")
-# def get_file () :
-# 	bot.getFile(chat_id=update.message.chat_id , )
 def documents(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
 	logger.addLog("Starting thread for document")
@@ -336,8 +340,10 @@ def file_image(bot,update) :
 	file_id = update.message.photo[0]['file_id']
 	logger.addLog("Starting thread for image")
 	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "img_","img")).start()
-
-
+def facebook_start(bot,update) :
+	global Flag
+	bot.sendMessage(chat_id=update.message.chat_id , text="Please send the id(s) of the facebook page(s) you wish to subscribe.")
+	Flag = "fb_reg"
 # photo_selector_button = []
 	# for photo in update.message.photo :
 	# 	file_id = photo['file_id']
@@ -412,10 +418,22 @@ def echo(bot, update):
 		logger.addLog ("Got the search query")
 		Flag = None
 		Thread(target = handelling_youtube_search , args = (bot , update ,)).start()
+	elif Flag == "fb_reg" :
+		logger.addLog ("Got the request to add facebook pages")
+		Flag = None
+		pages = update.message.text.split(',')
+		logger.addLog("Staring fb_adding thread")
+		Thread(target =fb_reg.main, args = (pages,update.message.chat_id,bot,logger)).start()
 	else :
 		bot.sendMessage(chat_id=update.message.chat_id, text=update.message.text)
 	# ne = bot.editMessageText(message_id=int(message_obj.message_id) , chat_id=update.message.chat_id,text="This is updated message")
 	# logger.addLog (ne.message_id)
+def facebook_sender_handler(bot,logger):
+	while True :
+		logger.addLog('Starting facebook scraping',"Facebook")
+		fb_main.main(bot,logger)
+		logger.addLog("Going to sleep","Facebook") 
+		time.sleep(120)
 def echo_sticker(bot,update):
 	bot.sendSticker(chat_id=update.message.chat_id,sticker=update.message.sticker.file_id)
 def error_callback(bot, update, error):
@@ -448,6 +466,9 @@ def bot_help(bot,update):
 														"can send what you want search on youtube with how many pages of youtube you want to search.You will nicely get the search "
 														"results along with video download button after clicking which you can select the video which you want to download.\n(b) Download "
 														"via url button :\nAfter clicking it just send the video URL and then select which quality video you want and enjoy the video.",parse_mode="HTML")
+
+fb_bot = telegram.Bot(token=token)
+Thread(target=facebook_sender_handler , args=(fb_bot,logger,)).start()  #starting thread to scrape facebook pages
 Flag = None
 you_obj = None
 updater = Updater(token=token)
@@ -456,7 +477,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 #creating handlers
 start_handler = CommandHandler('start', start)
 youtube_handler = CommandHandler('youtube' , youtube_keyboard)
-help_handler = CommandHandler('help' , bot_help)
+help_handler = CommandHandler('help' , bot_help) 
+facebook_handler = CommandHandler('facebook',facebook_start)
 inline_query_handler = CallbackQueryHandler(inline_query)
 echo_handler = MessageHandler([Filters.text], echo)
 doc_handler = MessageHandler([Filters.document], documents)
@@ -469,6 +491,7 @@ echo_sticker_handler = MessageHandler([Filters.sticker],echo_sticker)
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
 dispatcher.add_handler(help_handler)
+dispatcher.add_handler(facebook_handler)
 dispatcher.add_handler(inline_query_handler)
 dispatcher.add_handler(echo_handler)
 dispatcher.add_error_handler(error_callback)
