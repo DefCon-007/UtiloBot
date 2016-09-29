@@ -15,7 +15,7 @@ def message_sender (page,bot) :
 				msg = "<a href='{}'>Image</a>\n<strong>{}</strong>\n{}\nPosted on : {} at {} \n<a href='https://www.facebook.com/{}'>View the post</a>".format(pic,page['name'],post['message'],post['real_date'],post['real_time'],post['id'])
 
 #				print("<a href={}>Image</a>\n{}\nPosted on : {} at {} \n<a href='https://www.facebook.com/{}'>View the post</a>".format(post['pic'],post['message'],post['real_date'],post['real_time'],post['id']))
-			bot.sendMessage(chat_id=subscribers , text = msg , parse_mode = 'HTML')
+			bot.sendMessage(chat_id=subscribers , text = msg , parse_mode = 'HTML',disable_web_page_preview=True)
 def main(bot,logger) :
 	try :
 		pages = json.load(open('FB/pages.json','r'))

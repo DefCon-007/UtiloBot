@@ -17,6 +17,7 @@ import json
 import Logger
 import fb_reg
 import fb_main
+from random import randint  #to get a random integer
 logger = Logger.Logger(name='My_Logger')
 with open('./ACCESS_TOKEN', 'r') as f:
 	token = f.readline().rstrip('\n')
@@ -310,7 +311,28 @@ def link_sender(bot,chat_id,file_id,file_name,flag="doc"):
 	bot.sendMessage(chat_id=chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(file_name,links['down'],links['del']) , disable_web_page_preview=True)
 	os.remove(file_local_path)
 def start(bot, update):
-	bot.sendMessage(chat_id=update.message.chat_id, text="I am an awesome bot. Send /help to know my secrets.")
+	welcome_message_1 = [
+	  "Hi ",
+	  "Hola ",
+	  "Hey ",
+	  "Hey there, "
+	]
+
+	welcome_message_2 = [
+	  "! Looks like we haven't met before.",
+	  "! Looks like this is our first meet.",
+	  "! How are you doing.",
+	]
+
+	welcome_message_3 = [
+	  " Send /help to know my secrets."
+	]
+	rand_index1 = randint(0,len(welcome_message_1) -1)
+	rand_index2 = randint(0,len(welcome_message_2) -1)
+	rand_index3 = randint(0,len(welcome_message_3) -1)
+	first_name = update.message.from_user.first_name
+	msg = welcome_message_1[rand_index1] + first_name + welcome_message_2[rand_index2]+ welcome_message_3[rand_index3]
+	bot.sendMessage(chat_id=update.message.chat_id, text=msg)
 def documents(bot, update):
 	bot.sendMessage(chat_id=update.message.chat_id, text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
 	logger.addLog("Starting thread for document")

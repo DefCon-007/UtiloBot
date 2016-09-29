@@ -78,8 +78,8 @@ def main(page_list,chat_id,bot,logger):
 		add_pages_for_scrapping(pages_json['names'],chat_id)
 		subscribed = "Congratulations you have been subscribed to following page(s) :\n"
 		for page in pages_json['names'] :
-			subscribed = subscribed + "{} : {}\n".format(page['id'],page['name'])
-		bot.sendMessage(chat_id=chat_id , text=subscribed)
+			subscribed = subscribed + "<strong>{}</strong> : {}\n".format(page['id'],page['name'])
+		bot.sendMessage(chat_id=chat_id , text=subscribed ,parse_mode="HTML")
 	if len(pages_json['wrong']) != 0 : 
 		#sending back the wrong page ids
 		msg = "Following page id(s) were wrong :\n{}".format('\n'.join(pages_json['wrong']))  
