@@ -223,7 +223,6 @@ def get_aggregated_feed(_id,log):
         data_dict['source'] = _id
    # data.extend(page_data)
     page_data.sort(key=lambda x: parse(x['created_time']), reverse=True)
-    page_data = remove_duplicates(page_data)
     page_data = prettify_date(page_data)
     parser = commonregex.CommonRegex()
     for post in page_data:
@@ -232,6 +231,9 @@ def get_aggregated_feed(_id,log):
             if 'flag' not in post :
                 post['message'] = enable_links(post['message'],parser)
                 post['flag'] = 1 
+    page_data = remove_duplicates(page_data)    
+    page_data.sort(key=lambda x: parse(x['created_time']), reverse=True)
+    #
     json.dump(page_data, open('FB/page_json/{}.json'.format(_id), 'w'))
     return page_data[0]['id']
 

@@ -16,8 +16,11 @@ import bitly_api
 import json
 import Logger
 import fb_reg
+import twitter_reg
+import tweet_checker
 import fb_main
 import sys
+import html
 from random import randint  #to get a random integer
 logger = Logger.Logger(name='My_Logger')
 with open('./ACCESS_TOKEN', 'r') as f:
@@ -367,6 +370,10 @@ def facebook_start(bot,update) :
 	global Flag
 	bot.sendMessage(chat_id=update.message.chat_id , text="Please send the id(s) of the facebook page(s) you wish to subscribe.")
 	Flag = "fb_reg"
+def twitter_start(bot,update) :
+	global Flag 
+	bot.sendMessage(chat_id=update.message.chat_id , text="Please send the handle(s) of the twitter account(s) you wish to subscribe.")
+	Flag = "twitter_reg"	
 # photo_selector_button = []
 	# for photo in update.message.photo :
 	# 	file_id = photo['file_id']
@@ -440,7 +447,8 @@ def get_joke_chuck(bot,chat_id,category):
 	try :
 		joke_json = requests.get(base_url).json()
 		logger.addLog("Successfully got the joke")
-		bot.sendMessage(chat_id=chat_id , text=joke_json['value']['joke'])
+		joke_msg = html.unescape(joke_json['value']['joke'])  #decoding the html encoding in the joke
+		bot.sendMessage(chat_id=chat_id , text=joke_msg)
 	except :
 		logger.addLog("Unable to get joke {} ".format(sys.exc_info()[0]))
 		bot.sendMessage(chat_id=chat_id, text="Sorry Unable to fetch joke")
@@ -466,6 +474,12 @@ def echo(bot, update):
 		pages = update.message.text.split(',')
 		logger.addLog("Staring fb_adding thread")
 		Thread(target =fb_reg.main, args = (pages,update.message.chat_id,bot,logger)).start()
+	elif Flag == "twitter_reg" :
+		logger.addLog ("Got the request to add twitter handles","Twitter")
+		Flag = None
+		handles = update.message.text.split(',')
+		logger.addLog("Staring twitter_adding thread" ,"Twitter")
+		Thread(target =twitter_reg.main, args = (handles,update.message.chat_id,bot,logger)).start()
 	else :
 		bot.sendMessage(chat_id=update.message.chat_id, text=update.message.text)
 	# ne = bot.editMessageText(message_id=int(message_obj.message_id) , chat_id=update.message.chat_id,text="This is updated message")
@@ -474,8 +488,14 @@ def facebook_sender_handler(bot,logger):
 	while True :
 		logger.addLog('Starting facebook scraping',"Facebook")
 		fb_main.main(bot,logger)
-		logger.addLog("Going to sleep","Facebook") 
-		time.sleep(600)
+		logger.addLog("facebook Going to sleep","Facebook") 
+		time.sleep(20)
+def twitter_sender_helper(bot ,logger) :
+	while True :
+		logger.addLog('Starting twitter scraping',"Twitter")
+		tweet_checker.main(bot,logger)
+		logger.addLog("Twitter Going to sleep","Twitter") 
+		time.sleep(20)	
 def echo_sticker(bot,update):
 	bot.sendSticker(chat_id=update.message.chat_id,sticker=update.message.sticker.file_id)
 def error_callback(bot, update, error):
@@ -509,8 +529,9 @@ def bot_help(bot,update):
 														"results along with video download button after clicking which you can select the video which you want to download.\n(b) Download "
 														"via url button :\nAfter clicking it just send the video URL and then select which quality video you want and enjoy the video.",parse_mode="HTML")
 
-fb_bot = telegram.Bot(token=token)
-Thread(target=facebook_sender_handler , args=(fb_bot,logger,)).start()  #starting thread to scrape facebook pages
+bot_for_thread = telegram.Bot(token=token)
+Thread(target=facebook_sender_handler , args=(bot_for_thread,logger,)).start()  #starting thread to scrape facebook pages
+Thread(target=twitter_sender_helper , args=(bot_for_thread,logger,)).start()  #starting thread to scrape facebook pages
 Flag = None
 you_obj = None
 updater = Updater(token=token)
@@ -521,6 +542,7 @@ start_handler = CommandHandler('start', start)
 youtube_handler = CommandHandler('youtube' , youtube_keyboard)
 help_handler = CommandHandler('help' , bot_help) 
 facebook_handler = CommandHandler('facebook',facebook_start)
+twitter_handler = CommandHandler('twitter',twitter_start)
 joke_handler = CommandHandler('joke',handle_jokes)
 inline_query_handler = CallbackQueryHandler(inline_query)
 echo_handler = MessageHandler([Filters.text], echo)
@@ -536,6 +558,7 @@ dispatcher.add_handler(youtube_handler)
 dispatcher.add_handler(help_handler)
 dispatcher.add_handler(joke_handler)
 dispatcher.add_handler(facebook_handler)
+dispatcher.add_handler(twitter_handler)
 dispatcher.add_handler(inline_query_handler)
 dispatcher.add_handler(echo_handler)
 dispatcher.add_error_handler(error_callback)

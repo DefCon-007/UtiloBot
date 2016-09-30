@@ -70,9 +70,9 @@ def page_adder(page_list,chat_id):
 		user_data = [{'page' : page_list , 'chat_id' : chat_id}]
 	json.dump(user_data,open('FB/users.json','w'))
 def main(page_list,chat_id,bot,logger):
-	logger.addLog("Checking for pages ")
+	logger.addLog("Checking for pages " ,"Facebook")
 	pages_json = page_check(page_list,logger)  #checking if the supplied page id(s) were correct and removing the wrong ones
-	logger.addLog("Got the response as : {}".format(pages_json))
+	logger.addLog("Got the response as : {}".format(pages_json) , "Facebook")
 	if len(pages_json['page']) != 0 :
 		page_adder(pages_json['page'],chat_id)  #addding the correct id(s)
 		add_pages_for_scrapping(pages_json['names'],chat_id)
