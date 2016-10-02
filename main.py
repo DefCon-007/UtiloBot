@@ -456,6 +456,10 @@ def inline_query(bot ,update) :
 					logger.addLog("mail sent")
 			else :
 				bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Aborting the mail")
+				file_local_path = os.path.abspath("./{}".format('mail_sub_{}'.format(update.callback_query['message']['chat']['id'])))  # getting full file path
+				os.remove(file_local_path)  # removing the file
+				bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'], text="Mail sent successfully")
+				logger.addLog("mail sending canceled")
 		except Exception as e:
 			logger.addLog(e)
 			bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Session ended.. Please send /mail to send a mail.")
