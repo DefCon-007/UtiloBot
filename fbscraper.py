@@ -48,6 +48,8 @@ def get_picture(post_id, dir="."):
         # return "{}.png".format(pic_id)
     except facepy.FacebookError:
         return None
+    except facepy.exceptions.FacebookError: 
+        return None
 
 
 def get_event_picture(post_id, dir="."):
@@ -231,6 +233,8 @@ def get_aggregated_feed(_id,log):
             if 'flag' not in post :
                 post['message'] = enable_links(post['message'],parser)
                 post['flag'] = 1 
+        else :
+            post['message'] = "" #adding dummy message so if a post have no text in it send message will not give error
     page_data = remove_duplicates(page_data)    
     page_data.sort(key=lambda x: parse(x['created_time']), reverse=True)
     #

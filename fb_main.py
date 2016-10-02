@@ -7,16 +7,16 @@ def message_sender (page,bot,old_id) :
 			break
 		else :
 			for subscribers in page['subs'] :
-				pic = True
 				try :
 					pic = post['pic'] 
 				except KeyError :
-					msg = "<strong>{}</strong>{}\nPosted on : {} at {} \n<a href='https://www.facebook.com/{}'>View the post</a>".format(page['name'],post['message'],post['real_date'],post['real_time'],post['id'])
+					pic = False
+					#msg = "<strong>{}</strong>{}\nPosted on : {} at {} \n<a href='https://www.facebook.com/{}'>View the post</a>".format(page['name'],post['message'],post['real_date'],post['real_time'],post['id'])
 				if pic :
-					msg = "<strong>{}</strong>\n{}\nPosted on : {} at {} \n<a href='https://www.facebook.com/{}'>View the post</a>".format(page['name'],post['message'],post['real_date'],post['real_time'],post['id'])
-				else :
 					msg = "<a href='{}'>Image</a>\n<strong>{}</strong>\n{}\nPosted on : {} at {} \n<a href='https://www.facebook.com/{}'>View the post</a>".format(pic,page['name'],post['message'],post['real_date'],post['real_time'],post['id'])
-
+				else :
+					msg = "<strong>{}</strong>\n{}\nPosted on : {} at {} \n<a href='https://www.facebook.com/{}'>View the post</a>".format(page['name'],post['message'],post['real_date'],post['real_time'],post['id'])
+					
 	#				print("<a href={}>Image</a>\n{}\nPosted on : {} at {} \n<a href='https://www.facebook.com/{}'>View the post</a>".format(post['pic'],post['message'],post['real_date'],post['real_time'],post['id']))
 				bot.sendMessage(chat_id=subscribers , text = msg , parse_mode = 'HTML',disable_web_page_preview=True)
 def main(bot,logger) :

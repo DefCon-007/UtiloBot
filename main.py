@@ -21,6 +21,7 @@ import tweet_checker
 import fb_main
 import sys
 import html
+import sendEmail
 from random import randint  #to get a random integer
 logger = Logger.Logger(name='My_Logger')
 with open('./ACCESS_TOKEN', 'r') as f:
@@ -441,6 +442,23 @@ def inline_query(bot ,update) :
 		query = update.callback_query['data'].split("_")
 		if query[1] == "CN" :
 			Thread(target=get_joke_chuck , args=(bot,update.callback_query['message']['chat']['id'], query[-1])).start()
+	elif update.callback_query['data'].startswith('mail'): #sending mail
+		try :
+			mail_json = json.load(open('mail_sub_{}'.format(update.callback_query['message']['chat']['id']) , 'r') )
+			if update.callback_query['data'].split('_')[1] == 'y' : #user chose  yes 
+					bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Sending mail ...")
+					logger.addLog("Sending the mail")
+					# mail_json = json.load('mail_sub_{}'.format(update.callback_query['message']['chat']['id']))
+					Thread(target=sendEmail.sendMail, args=(mail_json['id'] , mail_json['text']  , mail_json['sub'] ,)).start()
+					file_local_path = os.path.abspath("./{}".format('mail_sub_{}'.format(update.callback_query['message']['chat']['id']))) #getting full file path
+					os.remove(file_local_path)  #removing the file
+					bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Mail sent successfully")
+					logger.addLog("mail sent")
+			else :
+				bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Aborting the mail")
+		except Exception as e:
+			logger.addLog(e)
+			bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Session ended.. Please send /mail to send a mail.")
 def get_joke_chuck(bot,chat_id,category):
 	base_url = "http://api.icndb.com/jokes/random?limitTo=[{}]".format(category)
 	logger.addLog("Getting Joke","joke")
@@ -457,6 +475,14 @@ def handle_jokes(bot,update):
 	joke_keyboard = {'inline_keyboard': joke_buttons }
 	bot.sendMessage(chat_id=update.message.chat_id , text="Choose which joke you want" , reply_markup =joke_keyboard)
 	#Thread(target=get_joke_chuck , args=(bot,update.message.chat_id,)).start()
+def mail_confirm(bot,chat_id,mail_msg):
+	buttons = [{'text': "Yes" , 'callback_data' : 'mail_y'} , {'text': "No" , 'callback_data' : 'mail_n'}]
+	Inline_keyboard = {'inline_keyboard': [buttons] }
+	bot.sendMessage(chat_id=chat_id ,reply_markup = Inline_keyboard ,text = "The E-mail is as follows :\n{}\n\nShould I send it ?".format(mail_msg) , parse_mode='html')
+def send_mail(bot,update) :
+	global Flag
+	bot.sendMessage(chat_id=update.message.chat_id , text="Want to share some information with someone but don't wanna use your email address so you are at right place.\nSend the email id(s) to whom you wish to send the email. In case of multiple ids separate them with comma(,)")
+	Flag = "mail_id"
 def echo(bot, update):
 	global Flag
 	#if update.message.text == "Download video via url" :
@@ -480,6 +506,27 @@ def echo(bot, update):
 		handles = update.message.text.split(',')
 		logger.addLog("Staring twitter_adding thread" ,"Twitter")
 		Thread(target =twitter_reg.main, args = (handles,update.message.chat_id,bot,logger)).start()
+	elif Flag == "mail_id" :
+		logger.addLog ("Got the email ids to send mail ")
+		ids = update.message.text.split(',')
+		json.dump({'id':ids} , open('mail_sub_{}'.format(update.message.chat_id),'w'))
+		bot.sendMessage(chat_id=update.message.chat_id , text="Please Send the subject of your email")
+		Flag = "mail_sub"
+	elif Flag == "mail_sub" :  #getting the mail subject
+		bot.sendMessage(chat_id=update.message.chat_id , text="Please Send the main body of your email")
+		logger.addLog ("Got the subject to send mail from ")
+		mail_json = json.load(open('mail_sub_{}'.format(update.message.chat_id),'r'))
+		mail_json['sub'] = update.message.text
+		json.dump(mail_json,open('mail_sub_{}'.format(update.message.chat_id),'w')) 
+		Flag = "mail_text"
+	elif Flag == "mail_text" :
+		logger.addLog("Got the mail text")
+		Flag = None
+		mail_json = json.load(open('mail_sub_{}'.format(update.message.chat_id),'r'))
+		mail_json['text'] = update.message.text
+		json.dump(mail_json,open('mail_sub_{}'.format(update.message.chat_id),'w'))
+		mail_msg = "<strong>Subject</strong> :{}\n<strong>Body</strong> :{}\n<strong>Recipents : </strong>{}".format(mail_json['sub'],mail_json['text'],', '.join(mail_json['id']))
+		mail_confirm(bot,update.message.chat_id,mail_msg)
 	else :
 		bot.sendMessage(chat_id=update.message.chat_id, text=update.message.text)
 	# ne = bot.editMessageText(message_id=int(message_obj.message_id) , chat_id=update.message.chat_id,text="This is updated message")
@@ -489,13 +536,13 @@ def facebook_sender_handler(bot,logger):
 		logger.addLog('Starting facebook scraping',"Facebook")
 		fb_main.main(bot,logger)
 		logger.addLog("facebook Going to sleep","Facebook") 
-		time.sleep(20)
+		time.sleep(600)
 def twitter_sender_helper(bot ,logger) :
 	while True :
 		logger.addLog('Starting twitter scraping',"Twitter")
 		tweet_checker.main(bot,logger)
 		logger.addLog("Twitter Going to sleep","Twitter") 
-		time.sleep(20)	
+		time.sleep(600)	
 def echo_sticker(bot,update):
 	bot.sendSticker(chat_id=update.message.chat_id,sticker=update.message.sticker.file_id)
 def error_callback(bot, update, error):
@@ -544,6 +591,7 @@ help_handler = CommandHandler('help' , bot_help)
 facebook_handler = CommandHandler('facebook',facebook_start)
 twitter_handler = CommandHandler('twitter',twitter_start)
 joke_handler = CommandHandler('joke',handle_jokes)
+mail_handler = CommandHandler('mail',send_mail)
 inline_query_handler = CallbackQueryHandler(inline_query)
 echo_handler = MessageHandler([Filters.text], echo)
 doc_handler = MessageHandler([Filters.document], documents)
@@ -557,6 +605,7 @@ dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
 dispatcher.add_handler(help_handler)
 dispatcher.add_handler(joke_handler)
+dispatcher.add_handler(mail_handler)
 dispatcher.add_handler(facebook_handler)
 dispatcher.add_handler(twitter_handler)
 dispatcher.add_handler(inline_query_handler)
