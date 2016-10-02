@@ -5,6 +5,7 @@ nohup.out
 BITLY_ACCESS_TOKEN
 My_Logger.log
 FB_ACCESS_TOKEN
+EMAIL_CONFIG
 .idea/
 TWITTER_CONFIG.json
 FB/
