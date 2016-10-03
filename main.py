@@ -377,6 +377,43 @@ def twitter_sender_helper(bot ,logger) :
 		tweet_checker.main(bot,logger)
 		logger.addLog("Twitter Going to sleep","Twitter") 
 		time.sleep(600)	
+#this function gets the facebook and twitter subscription
+def user_subs_fb_twitter(bot,update):
+	try : 
+		fb_users_data = json.load(open('FB/users.json','r'))
+		fb_flag = False
+		for fb_user in fb_users_data :
+			if fb_user['chat_id'] == update.message.chat_id :
+				subs_pages_list = fb_user['page']
+				fb_flag = True
+				break
+	except FileNotFoundError :
+		logger.addLog("Unable to find users.json")
+	except Exception as e:
+		logger.addLog("While opening fb users got error : {}".format(e))
+	try :
+		twitter_user_data = json.load(open('Twitter/user_data.json','r'))
+		tw_flag =False 
+		for user in twitter_user_data :
+			if user['chat_id'] == update.message.chat_id :
+				twitter_subs_handle_list = user['handles']
+				tw_flag = True 
+				break
+	except FileNotFoundError :
+		logger.addLog("Unable to find user_data.json")
+	except Exception as e:
+		logger.addLog("While opening twitter users got error : {}".format(e))
+
+	msg = "" 
+	if fb_flag :
+		msg = msg + "<strong>You are subscribed to following Facebook pages :</strong>\n{}\n".format(', '.join(subs_pages_list))
+	else :
+		msg = msg + "<strong>You are not subscribed to any Facebook page</strong>\n"
+	if tw_flag :
+		msg = msg + "<strong>You are subscribed to following Twitter Handles :</strong>\n@{}\n".format(' @,'.join(twitter_subs_handle_list))
+	else :
+		msg = msg + "<strong>You are not subscribed to any Twitter Handle</strong>\n"
+	bot.sendMessage(chat_id=update.message.chat_id , text = msg , parse_mode='html')
 #handles all the callback_data sent by inline query keyboard
 def inline_query(bot ,update) :
 	global Flag
@@ -437,10 +474,10 @@ def inline_query(bot ,update) :
 					bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Mail sent successfully")
 					logger.addLog("mail sent")
 			else :
-				bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Aborting the mail")
+				#bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Aborting the mail")
 				file_local_path = os.path.abspath("./{}".format('mail_sub_{}'.format(update.callback_query['message']['chat']['id'])))  # getting full file path
 				os.remove(file_local_path)  # removing the file
-				bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'], text="Mail sent successfully")
+				bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'], text="Mail has been successfully discarded")
 				logger.addLog("Sending mail canceled ")
 		except Exception as e:
 			logger.addLog(e)
@@ -499,7 +536,7 @@ def send_mail(bot,update) :
 def mail_confirm(bot,chat_id,mail_msg):
 	buttons = [{'text': "Yes" , 'callback_data' : 'mail_y'} , {'text': "No" , 'callback_data' : 'mail_n'}]
 	Inline_keyboard = {'inline_keyboard': [buttons] }
-	bot.sendMessage(chat_id=chat_id ,reply_markup = Inline_keyboard ,text = "The E-mail is as follows :\n{}\n\nShould I send it ?".format(mail_msg) , parse_mode='html')
+	bot.sendMessage(chat_id=chat_id ,reply_markup = Inline_keyboard ,text = "The E-mail is as follows :\n{}\n\nShould I send it ?".format(mail_msg) , parse_mode='html' ,disable_web_page_preview=True)
 #this return the user same text what he/she sent
 def echo(bot, update):
 	global Flag
@@ -557,11 +594,18 @@ def bot_help(bot,update):
 	bot.sendMessage(chat_id=update.message.chat_id,text="<strong>1. Using file link generator : </strong>\nSimply "
 														"send your file to the bot and rest bot will see.You can record or send a video , "
 														"capture or send a image , send audio files. Inshort  you can send any kind of file. You can "
-														"also send  voice clips.\n<strong>2. Using the youtube functionaility :</strong>\nTo use this first send "
-														"<strong>/youtube</strong> .Now choose one of the options.\n(a)Search youtube :\nAfter selecting this option you "
-														"can send what you want search on youtube with how many pages of youtube you want to search.You will nicely get the search "
-														"results along with video download button after clicking which you can select the video which you want to download.\n(b) Download "
-														"via url button :\nAfter clicking it just send the video URL and then select which quality video you want and enjoy the video.",parse_mode="HTML")
+														"also send  voice clips.\n<strong> 2. Using Youtube functionality </strong>\nSend <strong>/youtube</strong>" 
+														"to download a video via URL or to first search a video on youtube an then download.\n<strong>3. Subscribing to facebook pages</strong>\n"
+														"Send <strong>/facebook</strong> and follow the bot instrutions.\n<strong>4. Subscribing to twitter handles</strong>\n"
+														"Send <strong>/twitter</strong> and follow the onscreen instrustions to subscribe to twitter handles.\n"
+														"Note : Current refresh rate for facebook pages and twitter handles is 10 minutes.\n"
+														"<strong>5. Getting hilarious jokes</strong>\nSend <strong>/joke</strong> to read hilarious Chuck Norris jokes.\n"
+														"<strong>6. Sending mail</strong>\nSend <strong>\mail</strong> to send a email to one or multiple people on behalf of you "
+														"via Utilo.",parse_mode="HTML")
+#this function handles the mysubscription command
+def subs_handler (bot,update):
+	Thread(target=user_subs_fb_twitter , args=(bot,update,)).start()
+
 
 #ending of the command handling functions
 
@@ -604,6 +648,7 @@ facebook_handler = CommandHandler('facebook',facebook_start)
 twitter_handler = CommandHandler('twitter',twitter_start)
 joke_handler = CommandHandler('joke',handle_jokes)
 mail_handler = CommandHandler('mail',send_mail)
+subscription_handler = CommandHandler('mysubscription',subs_handler)
 inline_query_handler = CallbackQueryHandler(inline_query)
 echo_handler = MessageHandler([Filters.text], echo)
 doc_handler = MessageHandler([Filters.document], documents)
@@ -618,6 +663,7 @@ dispatcher.add_handler(youtube_handler)
 dispatcher.add_handler(help_handler)
 dispatcher.add_handler(joke_handler)
 dispatcher.add_handler(mail_handler)
+dispatcher.add_handler(subscription_handler)
 dispatcher.add_handler(facebook_handler)
 dispatcher.add_handler(twitter_handler)
 dispatcher.add_handler(inline_query_handler)
