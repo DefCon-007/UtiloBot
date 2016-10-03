@@ -410,7 +410,7 @@ def user_subs_fb_twitter(bot,update):
 	else :
 		msg = msg + "<strong>You are not subscribed to any Facebook page</strong>\n"
 	if tw_flag :
-		msg = msg + "<strong>You are subscribed to following Twitter Handles :</strong>\n@{}\n".format(' @,'.join(twitter_subs_handle_list))
+		msg = msg + "<strong>You are subscribed to following Twitter Handles :</strong>\n@{}\n".format(' ,@'.join(twitter_subs_handle_list))
 	else :
 		msg = msg + "<strong>You are not subscribed to any Twitter Handle</strong>\n"
 	bot.sendMessage(chat_id=update.message.chat_id , text = msg , parse_mode='html')
