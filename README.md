@@ -27,15 +27,22 @@ Apart from these commands if you send any file to Utilo, he will upload that fil
     "consumer_secret" : " "
 }<br>
 5. Save your E-mail credentials in EMAIL_CONFIG.json as follows : <br>
-    {"email":" ","pass":" "}
-
+    {"email":" ","pass":" "}<br>
+6. Make two folders in the rerpository - FB , Twitter and inside make a folde pages_json.
 ## Screeshots
-#### Using youtube search 
+
+### Using youtube search 
 ![demo](http://i.imgur.com/WhZqPiq.gif)
-#### Using youtube download
-![alt tag](http://i.imgur.com/BzHMyp8.png)
-#### Using file link generators
-![alt tag](http://i.imgur.com/rxXnQ47.png)
-![alt tag](http://i.imgur.com/33et3QM.png)
-![alt tag](http://i.imgur.com/PxuyCJe.png)
+
+### Using youtube download
+<img src = "http://i.imgur.com/BzHMyp8.png" height="600" width="374">
+
+### Using file link generators
+<img src = "http://i.imgur.com/rxXnQ47.png" height="600" width="374">
+<img src = "http://i.imgur.com/33et3QM.png" height="600" width="374">
+<img src = "http://i.imgur.com/PxuyCJe.png" height="600" width="374">
+### Getting Jokes 
+<img src = "http://i.imgur.com/SjcsCQz.png" height="600" width="374">
+### Sending Mail 
+<img src = "http://i.imgur.com/lBUXNIF.png" height="600" width="374">
 
