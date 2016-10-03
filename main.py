@@ -11,7 +11,6 @@ from selenium import webdriver
 import selenium.common.exceptions
 import requests
 from bs4 import BeautifulSoup
-#from pyshorteners import Shortener
 import bitly_api
 import json
 import Logger
@@ -31,10 +30,30 @@ with open('./ACCESS_TOKEN', 'r') as f:
 with open('./BITLY_ACCESS_TOKEN', 'r') as f:
 	bitly_token = f.readline().rstrip('\n')
 
-
-
-
-
+#send the proper inline keyboard when user sends /youtube
+def youtube_keyboard(bot , update):
+	#keyBut = [{'text': 'Search YouTube'} , {'text' :'Download video via url'}]
+	#replyKeyboardMakeup = {'keyboard': [keyBut], 'resize_keyboard': True, 'one_time_keyboard': True}
+	Iniline_key = [{'text': "Search YouTube" , 'callback_data' : '1_ser'} , {'text': "Download video via URL" , 'callback_data' : '2_dwn'}]
+	Inline_keyboard = {'inline_keyboard': [Iniline_key] }
+	message_obj = bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = Inline_keyboard ,text = "Choose what you want to do")	
+#function that handles the youtube search i.e. open it in a new thread
+def handelling_youtube_search(bot,update):
+	query_list = update.message.text.split('-')
+	try :
+		page = int(query_list[1].replace(" ",""))
+	except ValueError :
+		bot.sendMessage(chat_id=update.message.chat_id , text= "Uh-ho you supplied <strong>{}</strong> which is not a proper page number. Please try again".format(query_list[1].replace(" ","")),parse_mode="HTML")
+		return 0
+	except IndexError :
+		bot.sendMessage(chat_id=update.message.chat_id , text= "OMG !!! You forgot to enter the pages. Its ok I will look on the first page for you.")
+		page = 1
+	search_result = youtube_search(query_list[0] , page)
+	if search_result == 0 :
+		bot.sendMessage(chat_id=update.message.chat_id , text= "There is some connection problem with Youtube.Please try again")
+		return 0
+	sending_search_result(bot=bot , update=update , search_result=search_result , flag_search=1)
+#Function that searches given query on youtube
 def youtube_search (name,page) :
 	a=0
 	results = []
@@ -94,22 +113,7 @@ def youtube_search (name,page) :
 			results.append(video)
 		a+=1
 	return results
-
-def handelling_youtube_search(bot,update):
-	query_list = update.message.text.split('-')
-	try :
-		page = int(query_list[1].replace(" ",""))
-	except ValueError :
-		bot.sendMessage(chat_id=update.message.chat_id , text= "Uh-ho you supplied <strong>{}</strong> which is not a proper page number. Please try again".format(query_list[1].replace(" ","")),parse_mode="HTML")
-		return 0
-	except IndexError :
-		bot.sendMessage(chat_id=update.message.chat_id , text= "OMG !!! You forgot to enter the pages. Its ok I will look on the first page for you.")
-		page = 1
-	search_result = youtube_search(query_list[0] , page)
-	if search_result == 0 :
-		bot.sendMessage(chat_id=update.message.chat_id , text= "There is some connection problem with Youtube.Please try again")
-		return 0
-	sending_search_result(bot=bot , update=update , search_result=search_result , flag_search=1)
+#this function sends the search results to the user
 def sending_search_result(bot , update , search_result,flag_search=0 ,prev=0 , later=1,msg_id=0 ,chat_id=0):
 	
 	if prev != 0 :
@@ -164,31 +168,7 @@ def sending_search_result(bot , update , search_result,flag_search=0 ,prev=0 , l
 			if e == "Bad Request: message is not modified" :
 				pass
 	#bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = Inline_keyboard ,text = "Choose what you want to do")
-def handelling_download_via_url(bot,update,url,flag=0,chat_id=0):
-	logger.addLog ("Video download thread started")
-	if flag == 0 :  #this means user used the download via url option
-		chat_id = update.message.chat_id
-		bot.sendMessage(chat_id=chat_id, text="Awesome !! I got the video link.. Just wait for few seconds !!")
-		bot.sendMessage(chat_id=chat_id, text="<strong>NOTE : There are some problems with server right now so your video might not get downloaded. !!</strong>",parse_mode="HTML")
-	main_json = youtube_download_via_url(url)   # ********* Add here check for wrong link ***************
-	if main_json == 0 : #unable to open the video site
-		bot.sendMessage(chat_id=chat_id,text="Sorry I was unable to download video due to some issues. Please try again later")
-		return 0
-	elif main_json == 2 : #video site opened but no links for download found
-		bot.sendMessage(chat_id=chat_id,text="There are some problems with video you selected. Please choose a different video")
-		return 0
-	video_list = main_json['videos']
-	logger.addLog ("I got the video links as follows : ")
-	logger.addLog (video_list)
-	#sending available quality
-	button_list = []
-	for video in video_list :
-		button_list.append([{'text':video['ext'] + video["quality"] , 'callback_data': "vid_url" + video["short_url"]}])
-	quality_keyboard={'inline_keyboard':button_list}
-	if flag == 0 :
-		bot.sendMessage(chat_id=chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality for {}".format(main_json['name']))
-	else :
-		bot.sendMessage(chat_id=chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality for {}".format(main_json['name']))
+#this function downloadls youtube video with the given url
 def youtube_download_via_url(base_url):
 	logger.addLog ("Starting web driver")
 	driver = webdriver.PhantomJS(service_args=['--load-images=false'])
@@ -268,7 +248,65 @@ def youtube_download_via_url(base_url):
 			break
 	you_json = {'name' : name , 'videos' : videos}
 	driver.quit()
-	return you_json
+	return you_json	
+#this function handles the downloading of youtube videos via URL
+def handelling_download_via_url(bot,update,url,flag=0,chat_id=0):
+	logger.addLog ("Video download thread started")
+	if flag == 0 :  #this means user used the download via url option
+		chat_id = update.message.chat_id
+		bot.sendMessage(chat_id=chat_id, text="Awesome !! I got the video link.. Just wait for few seconds !!")
+		bot.sendMessage(chat_id=chat_id, text="<strong>NOTE : There are some problems with server right now so your video might not get downloaded. !!</strong>",parse_mode="HTML")
+	main_json = youtube_download_via_url(url)   # ********* Add here check for wrong link ***************
+	if main_json == 0 : #unable to open the video site
+		bot.sendMessage(chat_id=chat_id,text="Sorry I was unable to download video due to some issues. Please try again later")
+		return 0
+	elif main_json == 2 : #video site opened but no links for download found
+		bot.sendMessage(chat_id=chat_id,text="There are some problems with video you selected. Please choose a different video")
+		return 0
+	video_list = main_json['videos']
+	logger.addLog ("I got the video links as follows : ")
+	logger.addLog (video_list)
+	#sending available quality
+	button_list = []
+	for video in video_list :
+		button_list.append([{'text':video['ext'] + video["quality"] , 'callback_data': "vid_url" + video["short_url"]}])
+	quality_keyboard={'inline_keyboard':button_list}
+	if flag == 0 :
+		bot.sendMessage(chat_id=chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality for {}".format(main_json['name']))
+	else :
+		bot.sendMessage(chat_id=chat_id ,reply_markup = quality_keyboard ,text = "Choose the quality for {}".format(main_json['name']))
+#start of file handling functions, These functions return the file object of the supplied file
+def documents(bot, update):
+	bot.sendMessage(chat_id=update.message.chat_id, text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
+	logger.addLog("Starting thread for document")
+	Thread(target = link_sender , args = (bot , update.message.chat_id ,update.message.document.file_id, update.message.document.file_name)).start()
+	#logger.addLog (bot.getFile(update.message.document.file_id))
+def file_audio(bot,update):
+	file_id = update.message.audio.file_id
+	title = update.message.audio.title
+	bot.sendMessage(chat_id=update.message.chat_id,text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(title))
+	#print(update.message.audio.duration)
+	#print (update.message.audio.mime_type)
+	#print (bot.getFile(update.message.audio.file_id)['file_path'])
+	logger.addLog("Starting thread for audio")
+	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, title,"aud")).start()
+def file_video(bot,update):
+	file_id = update.message.video.file_id
+	bot.sendMessage(chat_id=update.message.chat_id,text="I got the video\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
+	logger.addLog("Starting thread for video")
+	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "vid_", "vid")).start()
+def file_voice(bot,update):
+	file_id = update.message.voice.file_id
+	bot.sendMessage(chat_id=update.message.chat_id,text="I got your voice clip\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
+	logger.addLog("Starting thread for voice")
+	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "voice_", "voc")).start()
+def file_image(bot,update) :
+	bot.sendMessage(chat_id=update.message.chat_id,text="I got the image\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
+	file_id = update.message.photo[0]['file_id']
+	logger.addLog("Starting thread for image")
+	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "img_","img")).start()
+#end of file handling fuctions
+#this functions download,uploads and send back the short url to the supplied file
 def link_sender(bot,chat_id,file_id,file_name,flag="doc"):
 	logger.addLog ("Starting file download Thread")
 	file_url = bot.getFile(file_id)['file_path']  #getting file download url
@@ -315,87 +353,31 @@ def link_sender(bot,chat_id,file_id,file_name,flag="doc"):
 			return 0
 	bot.sendMessage(chat_id=chat_id, text="For the file {} \nDownload link : {}\nDeletion link : {}".format(file_name,links['down'],links['del']) , disable_web_page_preview=True)
 	os.remove(file_local_path)
-def start(bot, update):
-	welcome_message_1 = [
-	  "Hi ",
-	  "Hola ",
-	  "Hey ",
-	  "Hey there, "
-	]
-
-	welcome_message_2 = [
-	  "! Looks like we haven't met before.",
-	  "! Looks like this is our first meet.",
-	  "! How are you doing.",
-	]
-
-	welcome_message_3 = [
-	  " Send /help to know my secrets."
-	]
-	rand_index1 = randint(0,len(welcome_message_1) -1)
-	rand_index2 = randint(0,len(welcome_message_2) -1)
-	rand_index3 = randint(0,len(welcome_message_3) -1)
-	first_name = update.message.from_user.first_name
-	msg = welcome_message_1[rand_index1] + first_name + welcome_message_2[rand_index2]+ welcome_message_3[rand_index3]
-	bot.sendMessage(chat_id=update.message.chat_id, text=msg)
-def documents(bot, update):
-	bot.sendMessage(chat_id=update.message.chat_id, text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(update.message.document.file_name))
-	logger.addLog("Starting thread for document")
-	Thread(target = link_sender , args = (bot , update.message.chat_id ,update.message.document.file_id, update.message.document.file_name)).start()
-	#logger.addLog (bot.getFile(update.message.document.file_id))
-def file_audio(bot,update):
-	file_id = update.message.audio.file_id
-	title = update.message.audio.title
-	bot.sendMessage(chat_id=update.message.chat_id,text="I got {}\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days".format(title))
-	#print(update.message.audio.duration)
-	#print (update.message.audio.mime_type)
-	#print (bot.getFile(update.message.audio.file_id)['file_path'])
-	logger.addLog("Starting thread for audio")
-	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, title,"aud")).start()
-def file_video(bot,update):
-	file_id = update.message.video.file_id
-	bot.sendMessage(chat_id=update.message.chat_id,text="I got the video\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
-	logger.addLog("Starting thread for video")
-	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "vid_", "vid")).start()
-def file_voice(bot,update):
-	file_id = update.message.voice.file_id
-	bot.sendMessage(chat_id=update.message.chat_id,text="I got your voice clip\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
-	logger.addLog("Starting thread for voice")
-	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "voice_", "voc")).start()
-def file_image(bot,update) :
-	bot.sendMessage(chat_id=update.message.chat_id,text="I got the image\nI will just copy this file to my secure servers.\nI dont trust telegram file servers that much !!!!\nI will give you a deletion link in case you want your file deleted from my server\nBoth the download and upload link will be available for maximum 2 days")
-	file_id = update.message.photo[0]['file_id']
-	logger.addLog("Starting thread for image")
-	Thread(target=link_sender, args=(bot, update.message.chat_id, file_id, "img_","img")).start()
+#main function which run when /facebook is sent
 def facebook_start(bot,update) :
 	global Flag
 	bot.sendMessage(chat_id=update.message.chat_id , text="Please send the id(s) of the facebook page(s) you wish to subscribe.")
 	Flag = "fb_reg"
+#this functions is lauched from main in a thread to scrape facebook pages
+def facebook_sender_handler(bot,logger):
+	while True :
+		logger.addLog('Starting facebook scraping',"Facebook")
+		fb_main.main(bot,logger)
+		logger.addLog("facebook Going to sleep","Facebook") 
+		time.sleep(600)	
+#main function which runs when /twitter is sent
 def twitter_start(bot,update) :
 	global Flag 
 	bot.sendMessage(chat_id=update.message.chat_id , text="Please send the handle(s) of the twitter account(s) you wish to subscribe.")
 	Flag = "twitter_reg"	
-# photo_selector_button = []
-	# for photo in update.message.photo :
-	# 	file_id = photo['file_id']
-	# 	file_url = bot.getFile(file_id)['file_path']  #getting file url to get a file name
-	# 	file_name = file_url.split('/')[-1]
-	# 	#photo_selector_button.append([{'text':"Size {} bytes".format(photo['file_size']) , 'callback_data':'downpic_{}_{}_{}'.format(update.message.chat_id,file_id,file_name)}])
-	# 	photo_selector_button.append([{'text': "Size {} bytes".format(photo['file_size']),'callback_data': 'downpic_{}_{}_{}'.format("a", file_id,"a")}])
-	# photo_selector_keyboard = {'inline_keyboard' : photo_selector_button}
-	# bot.sendMessage(chat_id=update.message.chat_id, reply_markup=photo_selector_keyboard,text="For which photo you want links : " )
-	# print (update.message.photo[0])
-	# file_id = update.message.photo[0]['file_id']
-	# file_url = bot.getFile(file_id)['file_path']
-	# file_name = file_url.split('/')[-1]
-	# print (file_url)
-	# urllib.request.urlretrieve(file_url, "./{}".format(file_name))
-def youtube_keyboard(bot , update):
-	#keyBut = [{'text': 'Search YouTube'} , {'text' :'Download video via url'}]
-	#replyKeyboardMakeup = {'keyboard': [keyBut], 'resize_keyboard': True, 'one_time_keyboard': True}
-	Iniline_key = [{'text': "Search YouTube" , 'callback_data' : '1_ser'} , {'text': "Download video via URL" , 'callback_data' : '2_dwn'}]
-	Inline_keyboard = {'inline_keyboard': [Iniline_key] }
-	message_obj = bot.sendMessage(chat_id=update.message.chat_id ,reply_markup = Inline_keyboard ,text = "Choose what you want to do")
+#this function is launched from main to scrape twitter handles 
+def twitter_sender_helper(bot ,logger) :
+	while True :
+		logger.addLog('Starting twitter scraping',"Twitter")
+		tweet_checker.main(bot,logger)
+		logger.addLog("Twitter Going to sleep","Twitter") 
+		time.sleep(600)	
+#handles all the callback_data sent by inline query keyboard
 def inline_query(bot ,update) :
 	global Flag
 	#bot.answerCallbackQuery(text = "HII")
@@ -459,10 +441,44 @@ def inline_query(bot ,update) :
 				file_local_path = os.path.abspath("./{}".format('mail_sub_{}'.format(update.callback_query['message']['chat']['id'])))  # getting full file path
 				os.remove(file_local_path)  # removing the file
 				bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'], text="Mail sent successfully")
-				logger.addLog("mail sending canceled")
+				logger.addLog("Sending mail canceled ")
 		except Exception as e:
 			logger.addLog(e)
 			bot.sendMessage(chat_id=update.callback_query['message']['chat']['id'] ,text="Session ended.. Please send /mail to send a mail.")
+
+#starting of the command handelling functions
+
+#This handles the welcome message when someone starts the chat first time with the bot
+def start(bot, update):
+	welcome_message_1 = [
+	  "Hi ",
+	  "Hola ",
+	  "Hey ",
+	  "Hey there, "
+	]
+
+	welcome_message_2 = [
+	  "! Looks like we haven't met before.",
+	  "! Looks like this is our first meet.",
+	  "! How are you doing.",
+	]
+
+	welcome_message_3 = [
+	  " Send /help to know my secrets."
+	]
+	rand_index1 = randint(0,len(welcome_message_1) -1)
+	rand_index2 = randint(0,len(welcome_message_2) -1)
+	rand_index3 = randint(0,len(welcome_message_3) -1)
+	first_name = update.message.from_user.first_name
+	msg = welcome_message_1[rand_index1] + first_name + welcome_message_2[rand_index2]+ welcome_message_3[rand_index3]
+	bot.sendMessage(chat_id=update.message.chat_id, text=msg)			
+#this return the available joke types when user sends /joke
+def handle_jokes(bot,update):
+	joke_buttons = [[{'text':"Chuch Norris nerdy joke" , 'callback_data' : 'joke_CN_nerdy'}],[{'text':'Chuch Norris explicit joke' , 'callback_data' : 'joke_CN_explicit'}]]
+	joke_keyboard = {'inline_keyboard': joke_buttons }
+	bot.sendMessage(chat_id=update.message.chat_id , text="Choose which joke you want" , reply_markup =joke_keyboard)
+	#Thread(target=get_joke_chuck , args=(bot,update.message.chat_id,)).start()
+#this function handles Chuck jokes
 def get_joke_chuck(bot,chat_id,category):
 	base_url = "http://api.icndb.com/jokes/random?limitTo=[{}]".format(category)
 	logger.addLog("Getting Joke","joke")
@@ -474,19 +490,17 @@ def get_joke_chuck(bot,chat_id,category):
 	except :
 		logger.addLog("Unable to get joke {} ".format(sys.exc_info()[0]))
 		bot.sendMessage(chat_id=chat_id, text="Sorry Unable to fetch joke")
-def handle_jokes(bot,update):
-	joke_buttons = [[{'text':"Chuch Norris nerdy joke" , 'callback_data' : 'joke_CN_nerdy'}],[{'text':'Chuch Norris explicit joke' , 'callback_data' : 'joke_CN_explicit'}]]
-	joke_keyboard = {'inline_keyboard': joke_buttons }
-	bot.sendMessage(chat_id=update.message.chat_id , text="Choose which joke you want" , reply_markup =joke_keyboard)
-	#Thread(target=get_joke_chuck , args=(bot,update.message.chat_id,)).start()
-def mail_confirm(bot,chat_id,mail_msg):
-	buttons = [{'text': "Yes" , 'callback_data' : 'mail_y'} , {'text': "No" , 'callback_data' : 'mail_n'}]
-	Inline_keyboard = {'inline_keyboard': [buttons] }
-	bot.sendMessage(chat_id=chat_id ,reply_markup = Inline_keyboard ,text = "The E-mail is as follows :\n{}\n\nShould I send it ?".format(mail_msg) , parse_mode='html')
+#this is the mail mail fuction which takes information to send step by step to send the mail 
 def send_mail(bot,update) :
 	global Flag
 	bot.sendMessage(chat_id=update.message.chat_id , text="Want to share some information with someone but don't wanna use your email address so you are at right place.\nSend the email id(s) to whom you wish to send the email. In case of multiple ids separate them with comma(,)")
 	Flag = "mail_id"
+#this takes a confirmation to send the mail
+def mail_confirm(bot,chat_id,mail_msg):
+	buttons = [{'text': "Yes" , 'callback_data' : 'mail_y'} , {'text': "No" , 'callback_data' : 'mail_n'}]
+	Inline_keyboard = {'inline_keyboard': [buttons] }
+	bot.sendMessage(chat_id=chat_id ,reply_markup = Inline_keyboard ,text = "The E-mail is as follows :\n{}\n\nShould I send it ?".format(mail_msg) , parse_mode='html')
+#this return the user same text what he/she sent
 def echo(bot, update):
 	global Flag
 	#if update.message.text == "Download video via url" :
@@ -535,20 +549,22 @@ def echo(bot, update):
 		bot.sendMessage(chat_id=update.message.chat_id, text=update.message.text)
 	# ne = bot.editMessageText(message_id=int(message_obj.message_id) , chat_id=update.message.chat_id,text="This is updated message")
 	# logger.addLog (ne.message_id)
-def facebook_sender_handler(bot,logger):
-	while True :
-		logger.addLog('Starting facebook scraping',"Facebook")
-		fb_main.main(bot,logger)
-		logger.addLog("facebook Going to sleep","Facebook") 
-		time.sleep(600)
-def twitter_sender_helper(bot ,logger) :
-	while True :
-		logger.addLog('Starting twitter scraping',"Twitter")
-		tweet_checker.main(bot,logger)
-		logger.addLog("Twitter Going to sleep","Twitter") 
-		time.sleep(600)	
+#this return the user the same sticekr which he/she sent
 def echo_sticker(bot,update):
 	bot.sendSticker(chat_id=update.message.chat_id,sticker=update.message.sticker.file_id)
+#return a help message when one someone send /help
+def bot_help(bot,update):
+	bot.sendMessage(chat_id=update.message.chat_id,text="<strong>1. Using file link generator : </strong>\nSimply "
+														"send your file to the bot and rest bot will see.You can record or send a video , "
+														"capture or send a image , send audio files. Inshort  you can send any kind of file. You can "
+														"also send  voice clips.\n<strong>2. Using the youtube functionaility :</strong>\nTo use this first send "
+														"<strong>/youtube</strong> .Now choose one of the options.\n(a)Search youtube :\nAfter selecting this option you "
+														"can send what you want search on youtube with how many pages of youtube you want to search.You will nicely get the search "
+														"results along with video download button after clicking which you can select the video which you want to download.\n(b) Download "
+														"via url button :\nAfter clicking it just send the video URL and then select which quality video you want and enjoy the video.",parse_mode="HTML")
+
+#ending of the command handling functions
+
 def error_callback(bot, update, error):
     try:
         raise error
@@ -570,15 +586,7 @@ def error_callback(bot, update, error):
     except TelegramError:
     	logger.addLog (6)
         # handle all other telegram related errors
-def bot_help(bot,update):
-	bot.sendMessage(chat_id=update.message.chat_id,text="<strong>1. Using file link generator : </strong>\nSimply "
-														"send your file to the bot and rest bot will see.You can record or send a video , "
-														"capture or send a image , send audio files. Inshort  you can send any kind of file. You can "
-														"also send  voice clips.\n<strong>2. Using the youtube functionaility :</strong>\nTo use this first send "
-														"<strong>/youtube</strong> .Now choose one of the options.\n(a)Search youtube :\nAfter selecting this option you "
-														"can send what you want search on youtube with how many pages of youtube you want to search.You will nicely get the search "
-														"results along with video download button after clicking which you can select the video which you want to download.\n(b) Download "
-														"via url button :\nAfter clicking it just send the video URL and then select which quality video you want and enjoy the video.",parse_mode="HTML")
+
 
 bot_for_thread = telegram.Bot(token=token)
 Thread(target=facebook_sender_handler , args=(bot_for_thread,logger,)).start()  #starting thread to scrape facebook pages
