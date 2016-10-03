@@ -10,8 +10,9 @@ You can use the following commands after you found the UtiloBot on telegram.<br>
 3. /joke - Get a random hilarious joke<br>
 4. /facebook - To subscribe to facebook pages<br>
 5. /twitter - To subscribe to twitter handles<br>
-6. /mail - To send an E-mail to someone without using your email id.<br>
-7. /help - To know more.<br>
+6. /mysubscription - Lets you know all your Facebook and Twitter subscription.<br>
+7. /mail - To send an E-mail to someone without using your email id.<br>
+8. /help - To know more.<br>
 Apart from these commands if you send any file to Utilo, he will upload that file and send you a short URL to download and delete the file.
 <br>
 ## Using the Source Code 
