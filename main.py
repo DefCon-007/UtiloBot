@@ -578,7 +578,7 @@ def echo(bot, update):
 		logger.addLog("Got the mail text")
 		Flag = None
 		mail_json = json.load(open('mail_sub_{}'.format(update.message.chat_id),'r'))
-		mail_json['text'] = "{}\n\nSent via - Utilo Bot (The advanced telegram bot.Learn more at telegram.me/UtiloBot)".format(update.message.text )
+		mail_json['text'] = "{}\n\nSent via - Utilo Bot (A multi utility bot.Learn more at telegram.me/UtiloBot)".format(update.message.text )
 		json.dump(mail_json,open('mail_sub_{}'.format(update.message.chat_id),'w'))
 		mail_msg = "<strong>Subject</strong> :{}\n<strong>Body</strong> :{}\n<strong>Recipents : </strong>{}".format(mail_json['sub'],mail_json['text'],', '.join(mail_json['id']))
 		mail_confirm(bot,update.message.chat_id,mail_msg)
