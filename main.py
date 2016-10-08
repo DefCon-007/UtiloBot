@@ -174,7 +174,14 @@ def youtube_download_via_url(base_url):
 	driver = webdriver.PhantomJS(service_args=['--load-images=false'])
 	logger.addLog ("Webdriver started")
 	bitly = bitly_api.Connection(access_token=bitly_token)
-	base_url = base_url.replace("youtube" , "getlinkyoutube")  #changing supplied youtube url to redirect it to youtubemultidownload
+	if base_url.find("://youtu.be/") > 3:
+		base_url = base_url.replace("youtu.be/", "getlinkyoutube.com/watch?v=")
+	elif base_url.find("youtube.com/watch") > 6:
+		base_url = base_url.replace("youtube" , "getlinkyoutube")  #changing supplied youtube url to redirect it to youtubemultidownload
+	else:
+		logger.addLog("Incorrect URL provided: " + base_url)
+		bot.sendMessage(chat_id=chat_id, text="Sorry, I can't recognize your link T_T")
+		return 0
 	base_url = base_url.replace("https" , "http")
 	logger.addLog (base_url)
 	driver.get(base_url)
