@@ -1,6 +1,7 @@
 import requests
 import json
-
+import Logger
+logger = Logger.Logger(name='My_Logger')
 def goo_shorten_url(url):
 	with open('./GOOGLE_API_KEY', 'r') as f:
 		google_api = f.readline().rstrip('\n')
