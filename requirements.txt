@@ -1,0 +1,17 @@
+beautifulsoup4==4.5.1
+bs4==0.0.1
+certifi==2016.9.26
+commonregex==1.5.4
+django-utils==0.0.2
+facepy==1.0.8
+future==0.16.0
+oauthlib==2.0.1
+pkg-resources==0.0.0
+python-dateutil==2.6.0
+python-telegram-bot==5.2.0
+requests==2.12.1
+requests-oauthlib==0.7.0
+selenium==3.0.2
+six==1.10.0
+tweepy==3.5.0
+urllib3==1.19.1

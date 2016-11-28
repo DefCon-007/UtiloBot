@@ -11,7 +11,7 @@ from selenium import webdriver
 import selenium.common.exceptions
 import requests
 from bs4 import BeautifulSoup
-import bitly_api
+#import bitly_api
 import json
 import Logger
 import fb_reg
@@ -174,7 +174,21 @@ def youtube_download_via_url(base_url):
 	driver = webdriver.PhantomJS(service_args=['--load-images=false'])
 	logger.addLog ("Webdriver started")
 	bitly = bitly_api.Connection(access_token=bitly_token)
-	base_url = base_url.replace("youtube" , "getlinkyoutube")  #changing supplied youtube url to redirect it to youtubemultidownload
+	url_error = False
+	if base_url.find("http") < 0 and base_url.find("youtu") >= 0:
+		base_url = "http://" + base_url
+	else:
+		url_error = True
+	if base_url.find("://youtu.be/") > 3:
+		base_url = base_url.replace("youtu.be/", "getlinkyoutube.com/watch?v=")
+	elif base_url.find("youtube.com/watch") > 6:
+		base_url = base_url.replace("youtube" , "getlinkyoutube")  #changing supplied youtube url to redirect it to youtubemultidownload
+	else:
+		url_error = True
+	if url_error:
+		logger.addLog("Incorrect URL provided: " + base_url)
+		bot.sendMessage(chat_id=chat_id, text="Sorry, I can't recognize your link T_T")
+		return 0
 	base_url = base_url.replace("https" , "http")
 	logger.addLog (base_url)
 	driver.get(base_url)
@@ -650,13 +664,13 @@ joke_handler = CommandHandler('joke',handle_jokes)
 mail_handler = CommandHandler('mail',send_mail)
 subscription_handler = CommandHandler('mysubscription',subs_handler)
 inline_query_handler = CallbackQueryHandler(inline_query)
-echo_handler = MessageHandler([Filters.text], echo)
-doc_handler = MessageHandler([Filters.document], documents)
-img_handler = MessageHandler([Filters.photo],file_image)
-audio_handler = MessageHandler([Filters.audio],file_audio)
-video_handler = MessageHandler([Filters.video],file_video)
-voice_handler = MessageHandler([Filters.voice],file_voice)
-echo_sticker_handler = MessageHandler([Filters.sticker],echo_sticker)
+echo_handler = MessageHandler(Filters.text, echo)
+doc_handler = MessageHandler(Filters.document, documents)
+img_handler = MessageHandler(Filters.photo,file_image)
+audio_handler = MessageHandler(Filters.audio,file_audio)
+video_handler = MessageHandler(Filters.video,file_video)
+voice_handler = MessageHandler(Filters.voice,file_voice)
+echo_sticker_handler = MessageHandler(Filters.sticker,echo_sticker)
 #adding handlers to dispatcher
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
