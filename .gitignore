@@ -3,6 +3,7 @@ __pycache__/
 ghostdriver.log
 nohup.out
 BITLY_ACCESS_TOKEN
+GOOGLE_API_KEY
 My_Logger.log
 FB_ACCESS_TOKEN
 EMAIL_CONFIG

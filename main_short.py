@@ -1,4 +1,5 @@
-import bitly_api
+# import bitly_api
+from url_shortener import goo_shorten_url
 import sys
 from selenium import webdriver
 import selenium.common.exceptions
@@ -7,9 +8,7 @@ import time
 import Logger
 logger = Logger.Logger(name='My_Logger')
 def main(file_path):
-	with open('./BITLY_ACCESS_TOKEN', 'r') as f:
-		bitly_token = f.readline().rstrip('\n')
-	bitly = bitly_api.Connection(access_token=bitly_token)
+
 
 	driver = webdriver.PhantomJS()
 	logger.addLog ("opening expire box")
@@ -63,8 +62,10 @@ def main(file_path):
 	# count = 1
 	links = {"down": "" , "del" : ""}
 	# flag = 1
-	links['down'] =bitly.shorten(down_link)['url']
-	links['del'] =bitly.shorten(del_link)['url']
+	# links['down'] =bitly.shorten(down_link)['url']
+	# links['del'] =bitly.shorten(del_link)['url']
+	links['down'] =goo_shorten_url(down_link)
+	links['del'] =goo_shorten_url(del_link)
 		#links['down'] = tinyurl_shortbox.shorten(down_link , "SB-"+file_name)
 		#links['del'] = tinyurl_shortbox.shorten(del_link , "del-"+file_name)
 		# if links['down'] != 1:

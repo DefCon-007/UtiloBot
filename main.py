@@ -12,6 +12,7 @@ import selenium.common.exceptions
 import requests
 from bs4 import BeautifulSoup
 #import bitly_api
+from url_shortener import goo_shorten_url
 import json
 import Logger
 import fb_reg
@@ -27,8 +28,7 @@ with open('./ACCESS_TOKEN', 'r') as f:
 	token = f.readline().rstrip('\n')
 # with open('./GOOGLE_KEY', 'r') as f:
 # 	google_api = f.readline().rstrip('\n')
-with open('./BITLY_ACCESS_TOKEN', 'r') as f:
-	bitly_token = f.readline().rstrip('\n')
+
 
 #send the proper inline keyboard when user sends /youtube
 def youtube_keyboard(bot , update):
@@ -173,7 +173,7 @@ def youtube_download_via_url(base_url):
 	logger.addLog ("Starting web driver")
 	driver = webdriver.PhantomJS(service_args=['--load-images=false'])
 	logger.addLog ("Webdriver started")
-	bitly = bitly_api.Connection(access_token=bitly_token)
+	# bitly = bitly_api.Connection(access_token=bitly_token)
 	url_error = False
 	if base_url.find("http") < 0 and base_url.find("youtu") >= 0:
 		base_url = "http://" + base_url
@@ -221,11 +221,11 @@ def youtube_download_via_url(base_url):
 			span =qua_div.find_element_by_tag_name('span')
 			quality = span.text  # getting video url
 			if "Mp4" in quality :
-				videos.append({"ext":"Mp4 : " , "quality" : quality[4:] , "short_url" : bitly.shorten(url)['url'] })
+				videos.append({"ext":"Mp4 : " , "quality" : quality[4:] , "short_url" : goo_shorten_url(url)})
 			if "3gp" in quality :
-				videos.append({"ext":"3gp : " , "quality" : quality[4:] , "short_url" : bitly.shorten(url)['url'] })
+				videos.append({"ext":"3gp : " , "quality" : quality[4:] , "short_url" : goo_shorten_url(url)})
 			if "m4a" in quality :
-				videos.append({"ext":"m4a : " , "quality" : quality[4:], "short_url" : bitly.shorten(url)['url'] })
+				videos.append({"ext":"m4a : " , "quality" : quality[4:], "short_url" : goo_shorten_url(url)})
 
 			# videos.append({"ext":"Mp4 : " , "quality" : quality[5:] , "short_url" : bitly.shorten(url)['url'] })
 			# vid_json['quality'] = quality[5:]
