@@ -11,7 +11,7 @@ from selenium import webdriver
 import selenium.common.exceptions
 import requests
 from bs4 import BeautifulSoup
-import bitly_api
+#import bitly_api
 import json
 import Logger
 import fb_reg
@@ -664,13 +664,13 @@ joke_handler = CommandHandler('joke',handle_jokes)
 mail_handler = CommandHandler('mail',send_mail)
 subscription_handler = CommandHandler('mysubscription',subs_handler)
 inline_query_handler = CallbackQueryHandler(inline_query)
-echo_handler = MessageHandler([Filters.text], echo)
-doc_handler = MessageHandler([Filters.document], documents)
-img_handler = MessageHandler([Filters.photo],file_image)
-audio_handler = MessageHandler([Filters.audio],file_audio)
-video_handler = MessageHandler([Filters.video],file_video)
-voice_handler = MessageHandler([Filters.voice],file_voice)
-echo_sticker_handler = MessageHandler([Filters.sticker],echo_sticker)
+echo_handler = MessageHandler(Filters.text, echo)
+doc_handler = MessageHandler(Filters.document, documents)
+img_handler = MessageHandler(Filters.photo,file_image)
+audio_handler = MessageHandler(Filters.audio,file_audio)
+video_handler = MessageHandler(Filters.video,file_video)
+voice_handler = MessageHandler(Filters.voice,file_voice)
+echo_sticker_handler = MessageHandler(Filters.sticker,echo_sticker)
 #adding handlers to dispatcher
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(youtube_handler)
