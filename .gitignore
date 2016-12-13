@@ -1,3 +1,4 @@
+*.pyc
 ACCESS_TOKEN
 __pycache__/
 ghostdriver.log
