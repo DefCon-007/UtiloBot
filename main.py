@@ -197,7 +197,6 @@ def youtube_download_via_url(base_url):
 	logger.addLog (base_url)
 	driver.get(base_url)
 	logger.addLog (driver.current_url)
-	i=0
 	while True :
 		try:
 			name = driver.find_element_by_xpath("//h1[@class='title-video']").text
@@ -217,8 +216,9 @@ def youtube_download_via_url(base_url):
 	logger.addLog ("Getting detalis for {}".format(name))
 	# quality_list = driver.find_element_by_xpath("//*[@id='Download_Quality']/ul").find_elements_by_tag_name('li')
 	videos = []
+	i=0
 	while True :
-		for qua_div in driver.find_elements_by_xpath("//div[@class='col-md-4 downbuttonbox']"):
+		for qua_div in driver.find_elements_by_xpath("//div[@class='downloadlist']"):
 			anchor = qua_div.find_element_by_tag_name('a')
 			url = anchor.get_attribute('href')  #getting video url
 			url = url.replace("%20-%20[www.getlinkyoutube.com]","")  #removing getlinkyoutube from file name
@@ -230,31 +230,6 @@ def youtube_download_via_url(base_url):
 				videos.append({"ext":"3gp : " , "quality" : quality[4:] , "short_url" : goo_shorten_url(url)})
 			if "m4a" in quality :
 				videos.append({"ext":"m4a : " , "quality" : quality[4:], "short_url" : goo_shorten_url(url)})
-
-			# videos.append({"ext":"Mp4 : " , "quality" : quality[5:] , "short_url" : bitly.shorten(url)['url'] })
-			# vid_json['quality'] = quality[5:]
-			# vid_json['url'] = url
-			# video.append(vid_json)
-	#		videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
-	#getting all the mp4's
-	#logger.addLog ("For {}".format(quality_list[0].text))
-	# resoulution = quality_list[1].find_elements_by_tag_name('a')
-	# for res in resoulution :
-	# 	if res.get_attribute('class') == "btn btn-success" :
-	# 		continue
-	# 	# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
-	# 	# logger.addLog (shorten_url)
-	# 	videos.append({"ext":"Mp4 : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
-	# 	#logger.addLog (res.get_attribute('href'))
-	# #getting all the 3gp's
-	# #logger.addLog ("For {}".format(quality_list[-2].text))
-	# resoulution = quality_list[-1].find_elements_by_tag_name('a')
-	# #shortener = Shortener('Google', api_key=google_api)  #initialising link shortener
-	# #shortener = Shortener('Tinyurl')
-	# for res in resoulution :
-	# 	# shorten_url = bitly.shorten(res.get_attribute('href'))['url']
-	# 	# logger.addLog (shorten_url)
-	# 	videos.append({"ext":"3gp : " , "quality" : res.text , "short_url" : bitly.shorten(res.get_attribute('href'))['url'] })
 		if i >= 3:
 			logger.addLog("Unable to get video links")
 			driver.quit()
