@@ -1,3 +1,5 @@
+
+[![Join the chat at https://gitter.im/UtiloBot/Lobby](https://badges.gitter.im/UtiloBot/Lobby.svg)](https://gitter.im/UtiloBot/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 # UtiloBot
 It is bot for telegram.org that saves files sent to his to his server and provides you short download link and a deletion link.It can also download videos from youtube and perform youtube search too.
 
