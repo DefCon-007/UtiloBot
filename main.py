@@ -177,12 +177,15 @@ def youtube_download_via_url(base_url):
 	url_error = False
 	if base_url.find("http") < 0 and base_url.find("youtu") >= 0:
 		base_url = "http://" + base_url
+		url_error = True
 	else:
 		url_error = True
 	if base_url.find("://youtu.be/") > 3:
 		base_url = base_url.replace("youtu.be/", "getlinkyoutube.com/watch?v=")
+		url_error=True
 	elif base_url.find("youtube.com/watch") > 6:
 		base_url = base_url.replace("youtube" , "getlinkyoutube")  #changing supplied youtube url to redirect it to youtubemultidownload
+		url_error=True
 	else:
 		url_error = True
 	if url_error:
