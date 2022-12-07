@@ -1,6 +1,6 @@
 beautifulsoup4==4.5.1
 bs4==0.0.1
-certifi==2016.9.26
+certifi==2022.12.7
 commonregex==1.5.4
 django-utils==0.0.2
 facepy==1.0.8
